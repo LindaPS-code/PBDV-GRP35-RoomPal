@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Housing Listings - StudentShare{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <h1>Find Your Perfect Home</h1>
+    <p style="color: var(--gray);">Browse verified accommodation near your campus</p>
+</div>
+
+<!-- Group Application Banner -->
+{% if match_id %}
+<div class="alert alert-success mb-4" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+    <div>
+        <strong>👥 Group Mode Active</strong>
+        <p style="margin: 0.25rem 0 0;">You're browsing as a group. When you find housing, you can apply together with your matched roommate.</p>
+    </div>
+    <a href="{{ url_for('matches') }}" class="btn btn-outline btn-sm">Change Roommate</a>
+</div>
+{% endif %}
+
+<!-- Filters -->
+<div class="filter-section">
+    <form class="filter-form" action="{{ url_for('housing_listings') }}" method="GET">
+        {% if match_id %}
+            <input type="hidden" name="match_id" value="{{ match_id }}">
+        {% endif %}
+        
+        <div class="filter-grid">
+            <div class="form-group">
+                <label for="min_price">Min Price (R)</label>
+                <input type="number" class="form-control" id="min_price" name="min_price" 
+                       min="0" step="500" placeholder="Any" value="{{ request.args.get('min_price', '') }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="max_price">Max Price (R)</label>
+                <input type="number" class="form-control" id="max_price" name="max_price" 
+                       min="0" step="500" placeholder="Any" value="{{ request.args.get('max_price', '') }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="bedrooms">Bedrooms</label>
+                <select class="form-control" id="bedrooms" name="bedrooms">
+                    <option value="">Any</option>
+                    <option value="1" {% if request.args.get('bedrooms') == '1' %}selected{% endif %}>1+</option>
+                    <option value="2" {% if request.args.get('bedrooms') == '2' %}selected{% endif %}>2+</option>
+                    <option value="3" {% if request.args.get('bedrooms') == '3' %}selected{% endif %}>3+</option>
+                    <option value="4" {% if request.args.get('bedrooms') == '4' %}selected{% endif %}>4+</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="city">City/Area</label>
+                <select class="form-control" id="city" name="city">
+                    <option value="">All Cities</option>
+                    {% for city in cities %}
+                        <option value="{{ city }}" {% if request.args.get('city') == city %}selected{% endif %}>{{ city }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 2rem; flex-wrap: wrap; margin: 1rem 0;">
+            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" name="furnished" {% if request.args.get('furnished') %}checked{% endif %}>
+                Furnished Only
+            </label>
+            
+            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" name="pet_friendly" {% if request.args.get('pet_friendly') %}checked{% endif %}>
+                Pet Friendly
+            </label>
+            
+            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" name="utilities_included" {% if request.args.get('utilities_included') %}checked{% endif %}>
+                Utilities Included
+            </label>
+            
+            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" name="wifi_included" {% if request.args.get('wifi_included') %}checked{% endif %}>
+                WiFi Included
+            </label>
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+            <a href="{{ url_for('housing_listings') }}{% if match_id %}?match_id={{ match_id }}{% endif %}" class="btn btn-outline">Clear Filters</a>
+        </div>
+    </form>
+</div>
+
+<!-- Listings Grid -->
+<div class="filter-results">
+    {% if listings %}
+        <div class="grid">
+            {% for housing in listings %}
+                <div class="housing-card">
+                    {% if housing.images %}
+                        <img src="{{ url_for('uploaded_file', filename=housing.images.split(',')[0]) }}" 
+                             alt="{{ housing.title }}" class="housing-image">
+                    {% else %}
+                        <div class="housing-image" style="background: var(--light); display: flex; align-items: center; justify-content: center;">
+                            <span style="color: var(--gray);">No Image</span>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="housing-details">
+                        <h3 style="margin-bottom: 0.5rem;">{{ housing.title }}</h3>
+                        <p style="color: var(--gray); margin-bottom: 0.5rem;">{{ housing.address }}, {{ housing.city }}</p>
+                        
+                        <div class="housing-price">
+                            R{{ "%.0f"|format(housing.price) }}/month
+                            <small>incl. utilities {{ '✓' if housing.utilities_included else '✗' }}</small>
+                        </div>
+                        
+                        <div class="housing-features">
+                            <span>🛏️ {{ housing.bedrooms }} bed</span>
+                            <span>🚿 {{ housing.bathrooms }} bath</span>
+                            <span>📏 {{ housing.square_meters }} m²</span>
+                        </div>
+                        
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0;">
+                            {% if housing.furnished %}
+                                <span class="badge badge-info">Furnished</span>
+                            {% endif %}
+                            {% if housing.pet_friendly %}
+                                <span class="badge badge-success">Pet Friendly</span>
+                            {% endif %}
+                            {% if housing.parking %}
+                                <span class="badge badge-warning">Parking</span>
+                            {% endif %}
+                            {% if housing.wifi_included %}
+                                <span class="badge badge-primary">WiFi</span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if match_id %}
+                            <a href="{{ url_for('apply_with_match', housing_id=housing.id, match_id=match_id) }}" 
+                               class="btn btn-success w-100">Apply as Group</a>
+                        {% else %}
+                            <a href="{{ url_for('housing_detail', housing_id=housing.id) }}" 
+                               class="btn btn-primary w-100">View Details</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center" style="padding: 3rem;">
+            <h3 style="margin-bottom: 1rem;">No Listings Found</h3>
+            <p>There are no housing listings matching your criteria. Check back later or adjust your filters.</p>
+            <a href="{{ url_for('housing_listings') }}{% if match_id %}?match_id={{ match_id }}{% endif %}" class="btn btn-primary" style="margin-top: 1rem;">Clear Filters</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

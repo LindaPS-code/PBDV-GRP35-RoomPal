@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - StudentShare{% endblock %}
+
+{% block content %}
+<div class="profile-header">
+    <div style="position: relative; display: inline-block;">
+        {% if current_user.profile_pic and current_user.profile_pic != 'default.jpg' %}
+            <img src="{{ url_for('uploaded_file', filename=current_user.profile_pic) }}" 
+                 alt="{{ current_user.first_name }}" class="profile-pic">
+        {% else %}
+            <div style="width: 150px; height: 150px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto;">
+                {{ current_user.first_name[0] }}{{ current_user.last_name[0] }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <h1 style="margin: 1rem 0 0.5rem;">{{ current_user.get_full_name() }}</h1>
+    <p style="color: var(--gray); margin-bottom: 0.25rem;">@{{ current_user.username }}</p>
+    <p style="color: var(--gray); margin-bottom: 1rem;">{{ current_user.email }}</p>
+    <p style="color: var(--gray); margin-bottom: 1.5rem;">Member since {{ current_user.created_at.strftime('%B %Y') }}</p>
+    
+    <a href="{{ url_for('edit_profile') }}" class="btn btn-primary">Edit Profile</a>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+    <!-- Main Info Card -->
+    <div class="card">
+        <div class="card-header">
+            <h3 style="color: white; margin: 0;">Personal Information</h3>
+        </div>
+        <div class="card-body">
+            <table class="profile-info">
+                <tr>
+                    <td><strong>First Name:</strong></td>
+                    <td>{{ current_user.first_name }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Last Name:</strong></td>
+                    <td>{{ current_user.last_name }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Username:</strong></td>
+                    <td>{{ current_user.username }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Email:</strong></td>
+                    <td>{{ current_user.email }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Role:</strong></td>
+                    <td><span class="badge badge-info">{{ current_user.role|title }}</span></td>
+                </tr>
+                {% if current_user.bio %}
+                <tr>
+                    <td><strong>Bio:</strong></td>
+                    <td>{{ current_user.bio }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+    
+    <!-- Stats Card -->
+    <div class="card">
+        <div class="card-header">
+            <h3 style="color: white; margin: 0;">Statistics</h3>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div style="text-align: center; padding: 1rem; background: var(--light); border-radius: var(--border-radius);">
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--secondary);">{{ current_user.sent_requests|length + current_user.received_requests|length }}</div>
+                    <div style="color: var(--gray);">Total Requests</div>
+                </div>
+                <div style="text-align: center; padding: 1rem; background: var(--light); border-radius: var(--border-radius);">
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--success);">{{ current_user.sent_requests|selectattr('status', 'equalto', 'accepted')|list|length + current_user.received_requests|selectattr('status', 'equalto', 'accepted')|list|length }}</div>
+                    <div style="color: var(--gray);">Active Matches</div>
+                </div>
+                <div style="text-align: center; padding: 1rem; background: var(--light); border-radius: var(--border-radius);">
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--info);">{{ current_user.applications|length }}</div>
+                    <div style="color: var(--gray);">Applications</div>
+                </div>
+                <div style="text-align: center; padding: 1rem; background: var(--light); border-radius: var(--border-radius);">
+                    <div style="font-size: 2rem; font-weight: 700; color: var(--primary);">{{ current_user.agreements|length }}</div>
+                    <div style="color: var(--gray);">Agreements</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preferences Section -->
+{% if current_user.role == 'student' and current_user.preference %}
+<div style="margin-top: 1.5rem;">
+    <div class="card">
+        <div class="card-header">
+            <h3 style="color: white; margin: 0;">Roommate Preferences</h3>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                <div>
+                    <h4 style="color: var(--primary); margin-bottom: 1rem;">Lifestyle</h4>
+                    <table style="width: 100%;">
+                        <tr>
+                            <td><strong>Sleep Schedule:</strong></td>
+                            <td>{{ current_user.preference.sleep_schedule|title }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Study Habits:</strong></td>
+                            <td>{{ current_user.preference.study_habits|title }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cleanliness:</strong></td>
+                            <td>{{ current_user.preference.cleanliness }}/5</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Guest Frequency:</strong></td>
+                            <td>{{ current_user.preference.guests_frequency|title }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Smoking:</strong></td>
+                            <td>{% if current_user.preference.smoking %}Yes{% else %}No{% endif %}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Pets:</strong></td>
+                            <td>{% if current_user.preference.pets %}Yes{% else %}No{% endif %}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div>
+                    <h4 style="color: var(--primary); margin-bottom: 1rem;">Budget & Location</h4>
+                    <table style="width: 100%;">
+                        <tr>
+                            <td><strong>Budget:</strong></td>
+                            <td>R{{ "%.0f"|format(current_user.preference.budget_min) }} - R{{ "%.0f"|format(current_user.preference.budget_max) }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Preferred Area:</strong></td>
+                            <td>{{ current_user.preference.preferred_area or 'Any' }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Distance to Campus:</strong></td>
+                            <td>{{ current_user.preference.distance_to_campus|title or 'Any' }}</td>
+                        </tr>
+                    </table>
+                    
+                    <h4 style="color: var(--primary); margin: 1.5rem 0 1rem;">Academic</h4>
+                    <table style="width: 100%;">
+                        <tr>
+                            <td><strong>Course:</strong></td>
+                            <td>{{ current_user.preference.course }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Year of Study:</strong></td>
+                            <td>{{ current_user.preference.year_of_study }}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div>
+                    <h4 style="color: var(--primary); margin-bottom: 1rem;">Housing Preferences</h4>
+                    <table style="width: 100%;">
+                        <tr>
+                            <td><strong>First Choice:</strong></td>
+                            <td>{% if current_user.preference.choice1 %}{{ current_user.preference.choice1.title }}{% else %}Not selected{% endif %}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Second Choice:</strong></td>
+                            <td>{% if current_user.preference.choice2 %}{{ current_user.preference.choice2.title }}{% else %}Not selected{% endif %}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Third Choice:</strong></td>
+                            <td>{% if current_user.preference.choice3 %}{{ current_user.preference.choice3.title }}{% else %}Not selected{% endif %}</td>
+                        </tr>
+                    </table>
+                    
+                    {% if current_user.preference.hobbies %}
+                        <h4 style="color: var(--primary); margin: 1.5rem 0 1rem;">Hobbies</h4>
+                        <p>{{ current_user.preference.hobbies }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 2rem;">
+                <a href="{{ url_for('preference_form') }}" class="btn btn-primary">Update Preferences</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% elif current_user.role == 'student' %}
+<div style="margin-top: 1.5rem;">
+    <div class="card">
+        <div class="card-body text-center" style="padding: 3rem;">
+            <p style="font-size: 1.2rem; margin-bottom: 1.5rem;">You haven't set your roommate preferences yet.</p>
+            <a href="{{ url_for('preference_form') }}" class="btn btn-primary">Set Preferences</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

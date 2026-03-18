@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Shared Checklist - StudentShare{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <h1>Shared Checklist with {{ other_user.get_full_name() }}</h1>
+    <p style="color: var(--gray);">Coordinate what each person will bring and split costs</p>
+</div>
+
+<div class="checklist-container" data-match-id="{{ match.id }}">
+    <!-- Add Item Form -->
+    <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+        <input type="text" id="new-item-name" class="form-control" placeholder="Enter item name (e.g., Fridge, Microwave, Kettle)" style="flex: 1;">
+        <button class="btn btn-primary" onclick="addChecklistItem()">Add Item</button>
+    </div>
+    
+    <!-- Items List -->
+    {% if items %}
+        <div style="margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1rem;">Items to Coordinate</h3>
+            
+            {% for item in items %}
+                <div class="checklist-item" id="item-{{ item.id }}">
+                    <div style="flex: 2;">
+                        <strong>{{ item.item_name }}</strong>
+                        <small style="color: var(--gray); margin-left: 0.5rem;">Added by {{ item.creator.get_full_name() }}</small>
+                    </div>
+                    
+                    <select onchange="updateChecklistItem({{ item.id }})" id="status-{{ item.id }}">
+                        <option value="needed" {% if item.status == 'needed' %}selected{% endif %}>🔄 Needed</option>
+                        <option value="i_have" {% if item.status == 'i_have' %}selected{% endif %}>✅ I have this</option>
+                        <option value="you_bring" {% if item.status == 'you_bring' %}selected{% endif %}>📦 You bring</option>
+                        <option value="split_cost" {% if item.status == 'split_cost' %}selected{% endif %}>💰 Split cost</option>
+                    </select>
+                    
+                    <input type="number" 
+                           id="price-{{ item.id }}"
+                           placeholder="Price (R)"
+                           value="{{ item.price if item.price else '' }}"
+                           onchange="updateChecklistItem('{{ item.id }}')"
+                           style="width: 120px; {% if item.status != 'split_cost' %}opacity: 0.5;{% endif %}"
+                           {% if item.status != 'split_cost' %}disabled{% endif %}>
+                    
+                    <button class="btn btn-danger btn-sm" onclick="deleteChecklistItem('{{ item.id }}')">🗑️</button>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Cost Summary -->
+        {% if total_cost > 0 %}
+            <div class="checklist-total">
+                <h3>Cost Summary</h3>
+                <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+                    <div>
+                        <p><strong>Total Shared Cost:</strong> R{{ "%.2f"|format(total_cost) }}</p>
+                        <p><strong>Cost per person:</strong> R{{ "%.2f"|format(cost_per_person) }}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p><small style="color: var(--gray);">Each person pays:</small></p>
+                        <p><strong>{{ current_user.get_full_name() }}:</strong> R{{ "%.2f"|format(cost_per_person) }}</p>
+                        <p><strong>{{ other_user.get_full_name() }}:</strong> R{{ "%.2f"|format(cost_per_person) }}</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
+    {% else %}
+        <div class="alert alert-info text-center" style="padding: 3rem;">
+            <p style="margin-bottom: 1rem;">No items in checklist yet.</p>
+            <p style="color: var(--gray);">Add items you need to coordinate with your roommate.</p>
+        </div>
+    {% endif %}
+    
+    <!-- Quick Suggestions -->
+    <div style="margin-top: 2rem;">
+        <h4 style="margin-bottom: 1rem;">Common Items to Add:</h4>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button class="btn btn-outline btn-sm" onclick="suggestItem('Fridge')">Fridge</button>
+            <button class="btn btn-outline btn-sm" onclick="suggestItem('Microwave')">Microwave</button>
+            <button class="btn btn-outline btn-sm" onclick="suggestItem('Kettle')">Kettle</button>
+            <button class="btn btn-outline btn-sm" onclick="suggestItem('Toaster')">Toaster</button>
+            <button class="btn btn-outline btn-sm" onclick="suggestItem('Vacuum Cleaner')">Vacuum Cleaner</button>
+            <button class="btn btn-outline btn-sm" onclick="suggestItem('Washing Machine')">Washing Machine</button>
+            <button class="btn btn-outline btn-sm" onclick="suggestItem('Dining Table')">Dining Table</button>
+            <button class="btn btn-outline btn-sm" onclick="suggestItem('Sofa')">Sofa</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function addChecklistItem() {
+    const input = document.getElementById('new-item-name');
+    const itemName = input.value.trim();
+    
+    if (!itemName) {
+        showAlert('Please enter an item name', 'warning');
+        return;
+    }
+    
+    fetch(`/checklist/add_item/{{ match.id }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ item_name: itemName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            input.value = '';
+            location.reload();
+        } else {
+            showAlert('Failed to add item', 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('Network error. Please try again.', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+function updateChecklistItem(itemId) {
+    const status = document.getElementById(`status-${itemId}`).value;
+    const priceInput = document.getElementById(`price-${itemId}`);
+    const price = priceInput ? priceInput.value : null;
+    
+    // Enable/disable price input based on status
+    if (priceInput) {
+        priceInput.disabled = status !== 'split_cost';
+        if (status !== 'split_cost') {
+            priceInput.value = '';
+        }
+    }
+    
+    fetch(`/checklist/update_item/${itemId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            status: status,
+            price: price ? parseFloat(price) : null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload to update totals
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error updating item:', error);
+    });
+}
+
+function deleteChecklistItem(itemId) {
+    if (confirm('Are you sure you want to delete this item?')) {
+        fetch(`/checklist/delete_item/${itemId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`item-${itemId}`).remove();
+                showAlert('Item deleted', 'success');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting item:', error);
+        });
+    }
+}
+
+function suggestItem(itemName) {
+    document.getElementById('new-item-name').value = itemName;
+    addChecklistItem();
+}
+</script>
+{% endblock %}

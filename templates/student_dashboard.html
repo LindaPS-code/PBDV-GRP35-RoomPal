@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard - StudentShare{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <h1>Welcome back, {{ current_user.first_name }}! 👋</h1>
+    <p style="color: var(--gray);">Here's what's happening with your roommate search</p>
+</div>
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Compatibility Score</h3>
+        <div class="number">
+            {% if current_user.preference %}
+                {{ "%.1f"|format(calculate_compatibility(current_user.id, current_user.id)) }}%
+            {% else %}
+                N/A
+            {% endif %}
+        </div>
+        {% if not current_user.preference %}
+            <small style="color: var(--warning);">Complete preferences to get score</small>
+        {% endif %}
+    </div>
+    
+    <div class="stat-card">
+        <h3>Pending Requests</h3>
+        <div class="number">{{ pending_requests }}</div>
+        {% if pending_requests > 0 %}
+            <small style="color: var(--warning);">Awaiting your response</small>
+        {% endif %}
+    </div>
+    
+    <div class="stat-card">
+        <h3>Active Matches</h3>
+        <div class="number">{{ recent_matches|length }}</div>
+    </div>
+    
+    <div class="stat-card">
+        <h3>Finalised Matches</h3>
+        <div class="number">{{ finalised_matches }}</div>
+    </div>
+</div>
+
+{% if not current_user.preference %}
+<div class="alert alert-warning" style="margin-bottom: 2rem;">
+    <strong>Complete your profile!</strong> 
+    <p>Fill out your preferences to find compatible roommates and get housing recommendations.</p>
+    <a href="{{ url_for('preference_form') }}" class="btn btn-primary" style="margin-top: 0.5rem;">Complete Preferences</a>
+</div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div style="margin-bottom: 2rem;">
+    <h2>Quick Actions</h2>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+        <a href="{{ url_for('matches') }}" class="btn btn-primary">Find Roommates</a>
+        <a href="{{ url_for('housing_listings') }}" class="btn btn-secondary">Browse Housing</a>
+        <a href="{{ url_for('preference_form') }}" class="btn btn-outline">
+            {% if current_user.preference %}Update{% else %}Complete{% endif %} Preferences
+        </a>
+    </div>
+</div>
+
+<!-- Recent Notifications -->
+<div style="margin-bottom: 2rem;">
+    <h2>Recent Notifications</h2>
+    <div style="background: var(--white); border-radius: var(--border-radius); box-shadow: var(--shadow);">
+        {% if notifications %}
+            {% for notification in notifications %}
+                <div class="notification-item {{ 'unread' if not notification.is_read }}" 
+                     style="padding: 1rem; border-bottom: 1px solid var(--light);">
+                    <div class="notification-title">{{ notification.title }}</div>
+                    <div class="notification-message">{{ notification.message }}</div>
+                    <div class="notification-time">{{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div style="padding: 2rem; text-align: center; color: var(--gray);">
+                <p>No new notifications</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Matches -->
+{% if recent_matches %}
+<div>
+    <h2>Recent Matches</h2>
+    <div class="grid" style="margin-top: 1rem;">
+        {% for match in recent_matches %}
+            {% set other_user = match.sender if match.receiver_id == current_user.id else match.receiver %}
+            <div class="card">
+                <div class="card-body">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        {% if other_user.profile_pic and other_user.profile_pic != 'default.jpg' %}
+                            <img src="{{ url_for('uploaded_file', filename=other_user.profile_pic) }}" 
+                                 alt="{{ other_user.first_name }}" 
+                                 style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+                        {% else %}
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                                {{ other_user.first_name[0] }}{{ other_user.last_name[0] }}
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h4 style="margin-bottom: 0.25rem;">{{ other_user.get_full_name() }}</h4>
+                            <p style="color: var(--gray); margin-bottom: 0;">Matched on {{ match.updated_at.strftime('%d %b %Y') }}</p>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="{{ url_for('chat', match_id=match.id) }}" class="btn btn-primary btn-sm">Chat</a>
+                        <a href="{{ url_for('checklist', match_id=match.id) }}" class="btn btn-outline btn-sm">Checklist</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Housing Preferences -->
+{% if current_user.preference and (current_user.preference.housing_choice1 or current_user.preference.housing_choice2 or current_user.preference.housing_choice3) %}
+<div style="margin-top: 2rem;">
+    <h2>Your Housing Preferences</h2>
+    <div class="grid" style="margin-top: 1rem;">
+        {% if current_user.preference.housing_choice1 %}
+            {% set housing = current_user.preference.choice1 %}
+            <div class="card">
+                <div class="card-body">
+                    <h4>{{ housing.title }}</h4>
+                    <p style="color: var(--secondary); font-weight: 600;">R{{ "%.0f"|format(housing.price) }}/month</p>
+                    <p>{{ housing.address }}</p>
+                    <span class="badge" style="background: var(--secondary); color: white;">Choice 1</span>
+                </div>
+            </div>
+        {% endif %}
+        <!-- Similar for choice2 and choice3 -->
+    </div>
+</div>
+{% endif %}
+{% endblock %}

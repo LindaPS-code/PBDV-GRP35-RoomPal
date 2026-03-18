@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Chat with {{ other_user.get_full_name() }} - StudentShare{% endblock %}
+
+{% block content %}
+<div class="chat-container" data-match-id="{{ match.id }}">
+    <div class="chat-header">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            {% if other_user.profile_pic and other_user.profile_pic != 'default.jpg' %}
+                <img src="{{ url_for('uploaded_file', filename=other_user.profile_pic) }}" 
+                     alt="{{ other_user.first_name }}" 
+                     style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+            {% else %}
+                <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--secondary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                    {{ other_user.first_name[0] }}{{ other_user.last_name[0] }}
+                </div>
+            {% endif %}
+            
+            <div>
+                <h3 style="color: white; margin-bottom: 0.25rem;">{{ other_user.get_full_name() }}</h3>
+                <p style="color: rgba(255,255,255,0.8); margin: 0;">{{ other_user.preference.course if other_user.preference else 'Student' }}</p>
+            </div>
+            
+            <div style="margin-left: auto;">
+                <span class="badge" style="background: rgba(255,255,255,0.2); color: white;">
+                    Match: {{ "%.1f"|format(match.compatibility_score) }}%
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div id="chat-messages" class="chat-messages">
+        {% for message in messages %}
+            <div class="message {{ 'sent' if message.sender_id == current_user.id else 'received' }}">
+                <div class="message-content">{{ message.content }}</div>
+                <div class="message-time">{{ message.created_at.strftime('%H:%M') }}</div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <div class="chat-input">
+        <input type="text" id="chat-input" placeholder="Type your message..." autocomplete="off">
+        <button id="send-message" class="btn btn-primary">Send</button>
+    </div>
+</div>
+
+<script>
+let currentChatMatchId = '{{ match.id }}';
+let chatPollingInterval = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    startChatPolling(currentChatMatchId);
+    scrollChatToBottom();
+    
+    const chatInput = document.getElementById('chat-input');
+    const sendButton = document.getElementById('send-message');
+    
+    chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    
+    sendButton.addEventListener('click', sendMessage);
+});
+
+function startChatPolling(matchId) {
+    if (chatPollingInterval) {
+        clearInterval(chatPollingInterval);
+    }
+    
+    chatPollingInterval = setInterval(() => {
+        fetchMessages(matchId);
+    }, 3000);
+}
+
+async function fetchMessages(matchId) {
+    try {
+        const response = await fetch(`/chat/${matchId}/messages`);
+        const data = await response.json();
+        updateChatMessages(data.messages);
+    } catch (error) {
+        console.error('Error fetching messages:', error);
+    }
+}
+
+function updateChatMessages(messages) {
+    const container = document.getElementById('chat-messages');
+    if (!container) return;
+    
+    const wasAtBottom = Math.abs(container.scrollHeight - container.scrollTop - container.clientHeight) < 1;
+    
+    container.innerHTML = '';
+    messages.forEach(msg => {
+        const messageDiv = createMessageElement(msg);
+        container.appendChild(messageDiv);
+    });
+    
+    if (wasAtBottom) {
+        scrollChatToBottom();
+    }
+}
+
+function createMessageElement(message) {
+    const div = document.createElement('div');
+    div.className = `message ${message.sender_id == currentUserId ? 'sent' : 'received'}`;
+    div.innerHTML = `
+        <div class="message-content">${escapeHtml(message.content)}</div>
+        <div class="message-time">${message.created_at}</div>
+    `;
+    return div;
+}
+
+function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const content = input.value.trim();
+    
+    if (!content || !currentChatMatchId) return;
+    
+    fetch(`/send_message/${currentChatMatchId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content: content })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            input.value = '';
+            fetchMessages(currentChatMatchId);
+        } else {
+            showAlert('Failed to send message', 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('Network error. Please try again.', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+function scrollChatToBottom() {
+    const container = document.getElementById('chat-messages');
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// Clean up on page unload
+window.addEventListener('beforeunload', function() {
+    if (chatPollingInterval) {
+        clearInterval(chatPollingInterval);
+    }
+});
+</script>
+{% endblock %}

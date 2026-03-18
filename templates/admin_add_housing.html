@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Add Housing - StudentShare{% endblock %}
+
+{% block content %}
+<div class="form-container" style="max-width: 800px;">
+    <h2 class="text-center mb-3">Add New Housing Listing</h2>
+    <p class="text-center mb-4" style="color: var(--gray);">Fill in the details to add a new accommodation</p>
+    
+    <form method="POST" action="{{ url_for('admin_add_housing') }}" enctype="multipart/form-data" data-validate>
+        <!-- Basic Information -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Basic Information</h3>
+            
+            <div class="form-group">
+                <label for="title">Property Title *</label>
+                <input type="text" class="form-control" id="title" name="title" required 
+                       placeholder="e.g., Modern 2-Bedroom Apartment near Campus">
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Full Description *</label>
+                <textarea class="form-control" id="description" name="description" rows="5" required 
+                          placeholder="Provide a detailed description of the property..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="address">Street Address *</label>
+                <input type="text" class="form-control" id="address" name="address" required 
+                       placeholder="e.g., 123 Main Street">
+            </div>
+            
+            <div class="form-group">
+                <label for="city">City/Suburb *</label>
+                <input type="text" class="form-control" id="city" name="city" required 
+                       placeholder="e.g., Rondebosch, Hatfield, Braamfontein">
+            </div>
+        </div>
+        
+        <!-- Property Details -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Property Details</h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                <div class="form-group">
+                    <label for="price">Monthly Rent (R) *</label>
+                    <input type="number" class="form-control" id="price" name="price" min="0" step="500" required 
+                           placeholder="e.g., 4500">
+                </div>
+                
+                <div class="form-group">
+                    <label for="bedrooms">Bedrooms *</label>
+                    <input type="number" class="form-control" id="bedrooms" name="bedrooms" min="1" required 
+                           placeholder="e.g., 2">
+                </div>
+                
+                <div class="form-group">
+                    <label for="bathrooms">Bathrooms</label>
+                    <input type="number" class="form-control" id="bathrooms" name="bathrooms" min="0" step="0.5" value="1"
+                           placeholder="e.g., 1.5">
+                </div>
+                
+                <div class="form-group">
+                    <label for="square_meters">Square Meters</label>
+                    <input type="number" class="form-control" id="square_meters" name="square_meters" min="0"
+                           placeholder="e.g., 65">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="available_from">Available From</label>
+                <input type="date" class="form-control" id="available_from" name="available_from" 
+                       min="{{ now().strftime('%Y-%m-%d') }}">
+            </div>
+        </div>
+        
+        <!-- Amenities -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Amenities</h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="furnished"> Furnished
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="utilities_included"> Utilities Included
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="parking"> Parking Available
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="pet_friendly"> Pet Friendly
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="wifi_included"> WiFi Included
+                </label>
+            </div>
+        </div>
+        
+        <!-- Images -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Property Images</h3>
+            
+            <div class="form-group">
+                <label for="images">Upload Images</label>
+                <input type="file" class="form-control" id="images" name="images" multiple accept="image/*" data-preview="image-preview">
+                <small style="color: var(--gray);">You can select multiple images. First image will be the cover.</small>
+            </div>
+            
+            <div id="image-preview" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;"></div>
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary" style="flex: 2;">Create Listing</button>
+            <a href="{{ url_for('admin_housing') }}" class="btn btn-outline" style="flex: 1;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Image preview is handled by main.js initializeFileUploads()
+</script>
+{% endblock %}

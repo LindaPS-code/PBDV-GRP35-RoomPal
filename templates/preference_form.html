@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Roommate Preferences - StudentShare{% endblock %}
+
+{% block content %}
+<div class="form-container" style="max-width: 800px;">
+    <h2 class="text-center mb-3">Roommate Preferences</h2>
+    <p class="text-center mb-4" style="color: var(--gray);">Tell us about your ideal roommate and housing</p>
+    
+    <form method="POST" action="{{ url_for('preference_form') }}" data-validate>
+        <!-- Lifestyle Section -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Lifestyle Preferences</h3>
+            
+            <div class="form-group">
+                <label for="sleep_schedule">Sleep Schedule *</label>
+                <select class="form-control" id="sleep_schedule" name="sleep_schedule" required>
+                    <option value="">Select your sleep schedule</option>
+                    <option value="early" {% if preference and preference.sleep_schedule == 'early' %}selected{% endif %}>Early Bird (Bed before 10 PM)</option>
+                    <option value="night" {% if preference and preference.sleep_schedule == 'night' %}selected{% endif %}>Night Owl (Bed after 12 AM)</option>
+                    <option value="flexible" {% if preference and preference.sleep_schedule == 'flexible' %}selected{% endif %}>Flexible</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="study_habits">Study Habits *</label>
+                <select class="form-control" id="study_habits" name="study_habits" required>
+                    <option value="">Select your study habits</option>
+                    <option value="quiet" {% if preference and preference.study_habits == 'quiet' %}selected{% endif %}>Need Complete Quiet</option>
+                    <option value="moderate" {% if preference and preference.study_habits == 'moderate' %}selected{% endif %}>Moderate Noise OK</option>
+                    <option value="group" {% if preference and preference.study_habits == 'group' %}selected{% endif %}>Prefer Group Study</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="cleanliness">Cleanliness Level</label>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <input type="range" class="form-control" id="cleanliness" name="cleanliness" 
+                           min="1" max="5" value="{{ preference.cleanliness if preference else 3 }}" 
+                           oninput="this.nextElementSibling.value = this.value">
+                    <output class="range-value">{{ preference.cleanliness if preference else 3 }}</output>
+                </div>
+                <small style="color: var(--gray);">1 = Very messy, 5 = Very tidy</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="guests_frequency">Guest Frequency</label>
+                <select class="form-control" id="guests_frequency" name="guests_frequency">
+                    <option value="">Select frequency</option>
+                    <option value="rarely" {% if preference and preference.guests_frequency == 'rarely' %}selected{% endif %}>Rarely (Once a month)</option>
+                    <option value="sometimes" {% if preference and preference.guests_frequency == 'sometimes' %}selected{% endif %}>Sometimes (Weekends)</option>
+                    <option value="often" {% if preference and preference.guests_frequency == 'often' %}selected{% endif %}>Often (Multiple times a week)</option>
+                </select>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" name="smoking" {% if preference and preference.smoking %}checked{% endif %}>
+                        I smoke
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" name="pets" {% if preference and preference.pets %}checked{% endif %}>
+                        I have pets
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Budget & Location Section -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Budget & Location</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="budget_min">Minimum Budget (R)</label>
+                    <input type="number" class="form-control" id="budget_min" name="budget_min" 
+                           value="{{ preference.budget_min if preference else 2000 }}" min="0" step="500" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="budget_max">Maximum Budget (R)</label>
+                    <input type="number" class="form-control" id="budget_max" name="budget_max" 
+                           value="{{ preference.budget_max if preference else 5000 }}" min="0" step="500" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="preferred_area">Preferred Area/Suburb</label>
+                <input type="text" class="form-control" id="preferred_area" name="preferred_area" 
+                       value="{{ preference.preferred_area if preference else '' }}" 
+                       placeholder="e.g., Rondebosch, Hatfield, Braamfontein">
+            </div>
+            
+            <div class="form-group">
+                <label for="distance_to_campus">Distance to Campus</label>
+                <select class="form-control" id="distance_to_campus" name="distance_to_campus">
+                    <option value="">Any distance</option>
+                    <option value="walking" {% if preference and preference.distance_to_campus == 'walking' %}selected{% endif %}>Walking distance (15 min)</option>
+                    <option value="biking" {% if preference and preference.distance_to_campus == 'biking' %}selected{% endif %}>Biking distance (30 min)</option>
+                    <option value="transit" {% if preference and preference.distance_to_campus == 'transit' %}selected{% endif %}>Public transport</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Personal Information Section -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">About You</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="age">Age</label>
+                    <input type="number" class="form-control" id="age" name="age" 
+                           value="{{ preference.age if preference else '' }}" min="16" max="100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="gender">Gender</label>
+                    <select class="form-control" id="gender" name="gender">
+                        <option value="">Prefer not to say</option>
+                        <option value="male" {% if preference and preference.gender == 'male' %}selected{% endif %}>Male</option>
+                        <option value="female" {% if preference and preference.gender == 'female' %}selected{% endif %}>Female</option>
+                        <option value="other" {% if preference and preference.gender == 'other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="course">Course/Program</label>
+                <input type="text" class="form-control" id="course" name="course" 
+                       value="{{ preference.course if preference else '' }}" 
+                       placeholder="e.g., BSc Computer Science">
+            </div>
+            
+            <div class="form-group">
+                <label for="year_of_study">Year of Study</label>
+                <select class="form-control" id="year_of_study" name="year_of_study">
+                    <option value="1" {% if preference and preference.year_of_study == 1 %}selected{% endif %}>1st Year</option>
+                    <option value="2" {% if preference and preference.year_of_study == 2 %}selected{% endif %}>2nd Year</option>
+                    <option value="3" {% if preference and preference.year_of_study == 3 %}selected{% endif %}>3rd Year</option>
+                    <option value="4" {% if preference and preference.year_of_study == 4 %}selected{% endif %}>4th Year</option>
+                    <option value="5" {% if preference and preference.year_of_study == 5 %}selected{% endif %}>5th+ Year</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Housing Preferences Section -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Housing Preferences</h3>
+            <p style="color: var(--gray); font-size: 0.9rem; margin-bottom: 1rem;">Select your top 3 housing choices (optional)</p>
+            
+            <div class="form-group">
+                <label for="housing_choice1">First Choice</label>
+                <select class="form-control" id="housing_choice1" name="housing_choice1">
+                    <option value="">Select your first choice</option>
+                    {% for housing in housing_list %}
+                        <option value="{{ housing.id }}" {% if preference and preference.housing_choice1 == housing.id %}selected{% endif %}>
+                            {{ housing.title }} - R{{ "%.0f"|format(housing.price) }}/month
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="housing_choice2">Second Choice</label>
+                <select class="form-control" id="housing_choice2" name="housing_choice2">
+                    <option value="">Select your second choice</option>
+                    {% for housing in housing_list %}
+                        <option value="{{ housing.id }}" {% if preference and preference.housing_choice2 == housing.id %}selected{% endif %}>
+                            {{ housing.title }} - R{{ "%.0f"|format(housing.price) }}/month
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="housing_choice3">Third Choice</label>
+                <select class="form-control" id="housing_choice3" name="housing_choice3">
+                    <option value="">Select your third choice</option>
+                    {% for housing in housing_list %}
+                        <option value="{{ housing.id }}" {% if preference and preference.housing_choice3 == housing.id %}selected{% endif %}>
+                            {{ housing.title }} - R{{ "%.0f"|format(housing.price) }}/month
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <!-- Additional Information -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Additional Information</h3>
+            
+            <div class="form-group">
+                <label for="hobbies">Hobbies & Interests</label>
+                <textarea class="form-control" id="hobbies" name="hobbies" rows="3" 
+                          placeholder="List your hobbies, separated by commas (e.g., reading, hiking, gaming, cooking)">{{ preference.hobbies if preference else '' }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="additional_notes">Additional Notes</label>
+                <textarea class="form-control" id="additional_notes" name="additional_notes" rows="3" 
+                          placeholder="Anything else you'd like potential roommates to know?">{{ preference.additional_notes if preference else '' }}</textarea>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary" style="flex: 1;">Save Preferences</button>
+            <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline" style="flex: 1;">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

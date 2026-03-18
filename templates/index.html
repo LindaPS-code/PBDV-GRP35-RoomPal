@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to StudentShare{% endblock %}
+
+{% block content %}
+<div class="text-center" style="padding: 3rem 0;">
+    <h1 style="font-size: 3rem; margin-bottom: 1rem; color: white;">Find Your Perfect Roommate</h1>
+    <p style="font-size: 1.25rem; color: rgba(255,255,255,0.9); max-width: 600px; margin: 0 auto 2rem;">
+        Connect with compatible students, discover accommodation, and make your university life better.
+    </p>
+    
+    {% if not current_user.is_authenticated %}
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <a href="{{ url_for('register') }}" class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1.1rem;">Get Started</a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline" style="padding: 1rem 2rem; font-size: 1.1rem; background: white;">Login</a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Features Section -->
+<div style="padding: 4rem 0;">
+    <h2 class="text-center" style="color: white; margin-bottom: 3rem;">Why Choose StudentShare?</h2>
+    
+    <div class="grid">
+        <div class="card">
+            <div class="card-body text-center">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
+                <h3>Smart Matching</h3>
+                <p>Our algorithm matches you with compatible roommates based on lifestyle, study habits, and preferences.</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body text-center">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🏠</div>
+                <h3>Verified Housing</h3>
+                <p>Browse through verified accommodation listings with detailed information and photos.</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body text-center">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+                <h3>Chat & Coordinate</h3>
+                <p>Chat with your matched roommates and coordinate shared expenses with our checklist feature.</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body text-center">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+                <h3>Digital Agreements</h3>
+                <p>Review and sign digital roommate agreements securely within the platform.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How It Works -->
+<div style="background: white; padding: 4rem 0; margin: 4rem 0;">
+    <div class="container">
+        <h2 class="text-center" style="margin-bottom: 3rem;">How It Works</h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem;">
+            <div class="text-center">
+                <div style="background: var(--secondary); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-weight: bold; font-size: 1.5rem;">1</div>
+                <h3>Create Profile</h3>
+                <p>Sign up and tell us about yourself, your preferences, and what you're looking for.</p>
+            </div>
+            
+            <div class="text-center">
+                <div style="background: var(--secondary); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-weight: bold; font-size: 1.5rem;">2</div>
+                <h3>Get Matched</h3>
+                <p>Receive compatible roommate suggestions based on your preferences.</p>
+            </div>
+            
+            <div class="text-center">
+                <div style="background: var(--secondary); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-weight: bold; font-size: 1.5rem;">3</div>
+                <h3>Find Housing</h3>
+                <p>Browse available accommodation and apply together with your matched roommate.</p>
+            </div>
+            
+            <div class="text-center">
+                <div style="background: var(--secondary); color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-weight: bold; font-size: 1.5rem;">4</div>
+                <h3>Move In</h3>
+                <p>Sign the digital agreement and start your new journey together.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Testimonials -->
+<div style="padding: 4rem 0;">
+    <h2 class="text-center" style="color: white; margin-bottom: 3rem;">What Students Say</h2>
+    
+    <div class="grid">
+        <div class="card">
+            <div class="card-body">
+                <p style="font-style: italic;">"Found my perfect roommate through StudentShare! We have the same study habits and became great friends."</p>
+                <div style="display: flex; align-items: center; gap: 1rem; margin-top: 1rem;">
+                    <div style="width: 50px; height: 50px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">T</div>
+                    <div>
+                        <strong>Thabo M.</strong>
+                        <br>
+                        <small>University of Cape Town</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <p style="font-style: italic;">"The housing listings are great! Found a beautiful apartment near campus within my budget."</p>
+                <div style="display: flex; align-items: center; gap: 1rem; margin-top: 1rem;">
+                    <div style="width: 50px; height: 50px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">L</div>
+                    <div>
+                        <strong>Lerato N.</strong>
+                        <br>
+                        <small>University of Pretoria</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <p style="font-style: italic;">"The checklist feature helped us split costs fairly. No more arguments about who buys what!"</p>
+                <div style="display: flex; align-items: center; gap: 1rem; margin-top: 1rem;">
+                    <div style="width: 50px; height: 50px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">S</div>
+                    <div>
+                        <strong>Sipho K.</strong>
+                        <br>
+                        <small>Wits University</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+<div style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); padding: 4rem 0; border-radius: 12px; margin: 4rem 0;">
+    <div class="text-center" style="color: white;">
+        <h2 style="color: white; font-size: 2rem; margin-bottom: 1rem;">Ready to Find Your Perfect Roommate?</h2>
+        <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">Join hundreds of students already using StudentShare.</p>
+        {% if not current_user.is_authenticated %}
+            <a href="{{ url_for('register') }}" class="btn" style="background: white; color: var(--primary); padding: 1rem 3rem; font-size: 1.2rem;">Sign Up Now</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

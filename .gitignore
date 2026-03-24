@@ -1,2 +1,5 @@
 .env
 sent_emails/*.eml
+__pycache__/
+*.pyc
+roompal-*.log

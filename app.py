@@ -78,6 +78,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['EMAIL_PREVIEW_FOLDER'], exist_ok=True)
 
 db.init_app(app)
+#Creates a LoginManager object from Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'

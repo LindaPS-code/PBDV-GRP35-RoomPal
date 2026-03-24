@@ -2259,10 +2259,6 @@ def initialize_database():
         db.create_all()
 
 def seed_default_admin():
-    default_seed = 'true' if parse_bool(os.environ.get('RENDER', 'false')) else 'false'
-    if not parse_bool(os.environ.get('SEED_DEFAULT_ADMIN', default_seed)):
-        return
-
     admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
     admin_email = os.environ.get('ADMIN_EMAIL', 'admin@example.com')
     admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
@@ -2270,15 +2266,24 @@ def seed_default_admin():
 
     with app.app_context():
         admin = User.query.filter_by(username=admin_username).first()
-        if admin:
-            if not force_reset:
-                return
+        existing_admin = User.query.filter_by(role='admin').first()
 
-            admin.email = admin_email
-            admin.role = 'admin'
-            admin.set_password(admin_password)
-            db.session.commit()
-            print(f"Admin password reset - username: {admin_username}")
+        if admin:
+            if admin.role != 'admin' or force_reset:
+                admin.email = admin_email
+                admin.role = 'admin'
+                admin.set_password(admin_password)
+                db.session.commit()
+                print(f"Admin account ensured - username: {admin_username}")
+            return
+
+        if existing_admin:
+            if force_reset and existing_admin.username == admin_username:
+                existing_admin.email = admin_email
+                existing_admin.role = 'admin'
+                existing_admin.set_password(admin_password)
+                db.session.commit()
+                print(f"Admin password reset - username: {admin_username}")
             return
 
         admin = User(

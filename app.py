@@ -182,6 +182,24 @@ def send_password_reset_email(user):
     """
     return send_email(subject, [user.email], text_body, html_body)
 
+
+def create_notification_safe(user_id, notification_type, title, message, link='#'):
+    notification = Notification(
+        user_id=user_id,
+        type=notification_type,
+        title=title,
+        message=message,
+        link=link
+    )
+    db.session.add(notification)
+    try:
+        db.session.commit()
+        return True
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('Failed to save notification')
+        return False
+
 def send_agreement_ready_email(agreement):
     student = agreement.student
     housing = agreement.housing
@@ -901,16 +919,13 @@ def login():
         
         if user and user.check_password(password):
             login_user(user, remember='remember' in request.form)
-            
-            notification = Notification(
-                user_id=user.id,
-                type='login',
-                title='Welcome back!',
-                message=f'Welcome to Roommate Finder, {user.first_name}!',
-                link='#'
+            create_notification_safe(
+                user.id,
+                'login',
+                'Welcome back!',
+                f'Welcome to Roommate Finder, {user.first_name}!',
+                '#'
             )
-            db.session.add(notification)
-            db.session.commit()
             
             if user.role == 'admin':
                 return redirect(url_for('admin_dashboard'))
@@ -2269,8 +2284,16 @@ def seed_default_admin():
         print(f"Admin user created - username: {admin_username}")
 
 def initialize_app():
+    global _app_initialized
+    if _app_initialized:
+        return
     initialize_database()
     seed_default_admin()
+    _app_initialized = True
+
+
+_app_initialized = False
+initialize_app()
 
 if __name__ == '__main__':
     initialize_app()

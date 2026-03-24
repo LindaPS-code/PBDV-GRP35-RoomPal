@@ -142,7 +142,7 @@
 <div style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); padding: 4rem 0; border-radius: 12px; margin: 4rem 0;">
     <div class="text-center" style="color: white;">
         <h2 style="color: white; font-size: 2rem; margin-bottom: 1rem;">Ready to Find Your Perfect Roommate?</h2>
-        <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">Join hundreds of students already using StudentShare.</p>
+        <p style="color: white; font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">Join hundreds of students already using StudentShare.</p>
         {% if not current_user.is_authenticated %}
             <a href="{{ url_for('register') }}" class="btn" style="background: white; color: var(--primary); padding: 1rem 3rem; font-size: 1.2rem;">Sign Up Now</a>
         {% endif %}

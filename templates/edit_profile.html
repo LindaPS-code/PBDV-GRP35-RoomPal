@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile - StudentShare{% endblock %}
+
+{% block content %}
+<div class="form-container" style="max-width: 600px;">
+    <h2 class="text-center mb-3">Edit Profile</h2>
+    <p class="text-center mb-4" style="color: var(--gray);">Update your personal information</p>
+    
+    <form method="POST" action="{{ url_for('edit_profile') }}" enctype="multipart/form-data" data-validate>
+        <!-- Profile Picture -->
+        <div class="text-center mb-3">
+            {% if current_user.profile_pic and current_user.profile_pic != 'default.jpg' %}
+                <img src="{{ url_for('uploaded_file', filename=current_user.profile_pic) }}" 
+                     alt="{{ current_user.first_name }}" class="profile-pic" style="width: 100px; height: 100px;">
+            {% else %}
+                <div style="width: 100px; height: 100px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto;">
+                    {{ current_user.first_name[0] }}{{ current_user.last_name[0] }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="profile_pic">Profile Picture</label>
+            <input type="file" class="form-control" id="profile_pic" name="profile_pic" accept="image/*">
+            <small style="color: var(--gray);">Leave empty to keep current picture. Max size: 16MB</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="first_name">First Name *</label>
+            <input type="text" class="form-control" id="first_name" name="first_name" 
+                   value="{{ current_user.first_name }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="last_name">Last Name *</label>
+            <input type="text" class="form-control" id="last_name" name="last_name" 
+                   value="{{ current_user.last_name }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email *</label>
+            <input type="email" class="form-control" id="email" name="email" 
+                   value="{{ current_user.email }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="bio">Bio</label>
+            <textarea class="form-control" id="bio" name="bio" rows="4" 
+                      placeholder="Tell potential roommates about yourself...">{{ current_user.bio or '' }}</textarea>
+            <small style="color: var(--gray);">This will help us find better matches for you</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" class="form-control" id="username" value="{{ current_user.username }}" disabled>
+            <small style="color: var(--gray);">Username cannot be changed</small>
+        </div>
+        
+        <hr style="margin: 2rem 0;">
+        
+        <h3 style="margin-bottom: 1rem;">Change Password</h3>
+        <p style="color: var(--gray); font-size: 0.9rem; margin-bottom: 1.5rem;">Leave blank to keep current password</p>
+        
+        <div class="form-group">
+            <label for="current_password">Current Password</label>
+            <input type="password" class="form-control" id="current_password" name="current_password">
+        </div>
+        
+        <div class="form-group">
+            <label for="new_password">New Password</label>
+            <input type="password" class="form-control" id="new_password" name="new_password" data-strength>
+            <div class="progress-bar mt-1">
+                <div class="progress-fill password-strength-meter" style="width: 0%"></div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="confirm_password">Confirm New Password</label>
+            <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-100">Save Changes</button>
+        <a href="{{ url_for('profile') }}" class="btn btn-outline w-100 mt-2">Cancel</a>
+    </form>
+</div>
+{% endblock %}

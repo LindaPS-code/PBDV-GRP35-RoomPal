@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Apply as Group - StudentShare{% endblock %}
+
+{% block content %}
+<div class="form-container" style="max-width: 600px;">
+    <h2 class="text-center mb-3">Apply as Roommate Group</h2>
+    
+    <!-- Roommate Info -->
+    <div class="alert alert-success mb-4" style="display: flex; align-items: center; gap: 1rem;">
+        <div>
+            {% if roommate.profile_pic and roommate.profile_pic != 'default.jpg' %}
+                <img src="{{ url_for('uploaded_file', filename=roommate.profile_pic) }}" 
+                     alt="{{ roommate.first_name }}" 
+                     style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+            {% else %}
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                    {{ roommate.first_name[0] }}{{ roommate.last_name[0] }}
+                </div>
+            {% endif %}
+        </div>
+        <div>
+            <strong>Applying with:</strong>
+            <h4 style="margin: 0.25rem 0;">{{ roommate.get_full_name() }}</h4>
+            <p style="color: var(--gray); margin: 0;">{{ roommate.email }}</p>
+        </div>
+    </div>
+    
+    <!-- Housing Summary -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 style="margin-bottom: 0.5rem;">{{ housing.title }}</h3>
+            <p style="color: var(--gray); margin-bottom: 0.5rem;">{{ housing.address }}, {{ housing.city }}</p>
+            <div class="housing-price" style="font-size: 1.5rem;">R{{ "%.0f"|format(housing.price) }}/month</div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <span>🛏️ {{ housing.bedrooms }} bed</span>
+                <span>🚿 {{ housing.bathrooms }} bath</span>
+                <span>📏 {{ housing.square_meters }} m²</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Application Form -->
+    <form method="POST" action="{{ url_for('group_apply', match_id=match_id, housing_id=housing.id) }}" data-validate>
+        <div class="form-group">
+            <label for="move_in_date">Preferred Move-in Date *</label>
+            <input type="date" class="form-control" id="move_in_date" name="move_in_date" 
+                   min="{{ now().strftime('%Y-%m-%d') }}" required>
+            <small style="color: var(--gray);">This will be the move-in date for both students</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="lease_term">Lease Term *</label>
+            <select class="form-control" id="lease_term" name="lease_term" required>
+                <option value="">Select term</option>
+                <option value="6_months">6 Months</option>
+                <option value="12_months">12 Months</option>
+                <option value="flexible">Flexible</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="notes">Additional Notes</label>
+            <textarea class="form-control" id="notes" name="notes" rows="4"
+                      placeholder="Any questions or special requests? Both students will be considered in this application."></textarea>
+        </div>
+        
+        <div class="alert alert-warning mb-3">
+            <strong>Please Note:</strong>
+            <ul style="margin: 0.5rem 0 0; padding-left: 1.5rem;">
+                <li>This is a joint application for both you and your roommate</li>
+                <li>Both students will be equally responsible for the lease</li>
+                <li>You'll both need to sign the agreement if approved</li>
+            </ul>
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-success" style="flex: 2;">Submit Group Application</button>
+            <a href="{{ url_for('housing_detail', housing_id=housing.id) }}?match_id={{ match_id }}" class="btn btn-outline" style="flex: 1;">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

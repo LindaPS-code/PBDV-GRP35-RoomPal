@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Applications - StudentShare{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <h1>Application Management</h1>
+    <p style="color: var(--gray);">Review and manage housing applications</p>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+    <button class="tab active" data-tab="individual">Individual Applications ({{ individual_applications|length }})</button>
+    <button class="tab" data-tab="group">Group Applications ({{ group_applications|length }})</button>
+</div>
+
+<!-- Individual Applications -->
+<div id="individual" class="tab-content active">
+    <h2 style="margin-bottom: 1.5rem;">Individual Applications</h2>
+    
+    {% if individual_applications %}
+        {% for application in individual_applications %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                {% if application.student.profile_pic and application.student.profile_pic != 'default.jpg' %}
+                                    <img src="{{ url_for('uploaded_file', filename=application.student.profile_pic) }}" 
+                                         style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+                                {% else %}
+                                    <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                                        {{ application.student.first_name[0] }}{{ application.student.last_name[0] }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h4 style="margin-bottom: 0.25rem;">{{ application.student.get_full_name() }}</h4>
+                                    <p style="color: var(--gray);">{{ application.student.email }}</p>
+                                </div>
+                            </div>
+                            
+                            <h5 style="margin-bottom: 0.5rem;">{{ application.housing.title }}</h5>
+                            <p style="color: var(--gray); margin-bottom: 0.5rem;">{{ application.housing.address }}</p>
+                            
+                            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0;">
+                                <span class="badge {% if application.status == 'pending' %}badge-warning{% elif application.status == 'approved' %}badge-success{% else %}badge-danger{% endif %}">
+                                    {{ application.status|title }}
+                                </span>
+                                <span class="badge">💰 R{{ "%.0f"|format(application.housing.price) }}/month</span>
+                                {% if application.lease_term %}
+                                    <span class="badge">📋 {{ application.lease_term.replace('_', ' ')|title }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if application.move_in_date %}
+                                <p><strong>Move-in Date:</strong> {{ application.move_in_date.strftime('%d %B %Y') }}</p>
+                            {% endif %}
+                            
+                            {% if application.additional_notes %}
+                                <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-top: 1rem;">
+                                    <strong>Student Notes:</strong>
+                                    <p style="margin: 0.5rem 0 0;">{{ application.additional_notes }}</p>
+                                </div>
+                            {% endif %}
+                            
+                            <p style="margin-top: 1rem;"><small>Applied on: {{ application.created_at.strftime('%d %B %Y at %H:%M') }}</small></p>
+                        </div>
+                        
+                        <div style="text-align: right;">
+                            {% if application.status == 'pending' %}
+                                <button class="btn btn-success w-100 mb-2" 
+                                        onclick="handleApplication('{{ application.id }}', 'approve', 'individual')">
+                                    ✓ Approve Application
+                                </button>
+                                <button class="btn btn-danger w-100" 
+                                        onclick="handleApplication('{{ application.id }}', 'reject', 'individual')">
+                                    ✗ Reject Application
+                                </button>
+                            {% else %}
+                                <span class="badge {% if application.status == 'approved' %}badge-success{% else %}badge-danger{% endif %}" style="display: block; padding: 1rem;">
+                                    {{ application.status|title }}
+                                </span>
+                                {% if application.status == 'approved' %}
+                                    <a href="{{ url_for('admin_matches') }}" class="btn btn-outline btn-sm mt-2">View Match</a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info text-center" style="padding: 3rem;">
+            <p>No individual applications found.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Group Applications -->
+<div id="group" class="tab-content">
+    <h2 style="margin-bottom: 1.5rem;">Group Applications</h2>
+    
+    {% if group_applications %}
+        {% for application in group_applications %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                        <div>
+                            <div style="display: flex; gap: 2rem; margin-bottom: 1rem;">
+                                <!-- Sender -->
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    {% if application.match_request.sender.profile_pic and application.match_request.sender.profile_pic != 'default.jpg' %}
+                                        <img src="{{ url_for('uploaded_file', filename=application.match_request.sender.profile_pic) }}" 
+                                             style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                                    {% else %}
+                                        <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center;">
+                                            {{ application.match_request.sender.first_name[0] }}
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ application.match_request.sender.get_full_name() }}</strong>
+                                        <p style="color: var(--gray); font-size: 0.9rem;">{{ application.match_request.sender.email }}</p>
+                                    </div>
+                                </div>
+                                
+                                <span style="color: var(--gray);">+</span>
+                                
+                                <!-- Receiver -->
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    {% if application.match_request.receiver.profile_pic and application.match_request.receiver.profile_pic != 'default.jpg' %}
+                                        <img src="{{ url_for('uploaded_file', filename=application.match_request.receiver.profile_pic) }}" 
+                                             style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                                    {% else %}
+                                        <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--secondary); color: white; display: flex; align-items: center; justify-content: center;">
+                                            {{ application.match_request.receiver.first_name[0] }}
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ application.match_request.receiver.get_full_name() }}</strong>
+                                        <p style="color: var(--gray); font-size: 0.9rem;">{{ application.match_request.receiver.email }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h5 style="margin-bottom: 0.5rem;">{{ application.housing.title }}</h5>
+                            <p style="color: var(--gray); margin-bottom: 0.5rem;">{{ application.housing.address }}</p>
+                            
+                            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0;">
+                                <span class="badge {% if application.status == 'pending' %}badge-warning{% elif application.status == 'approved' %}badge-success{% else %}badge-danger{% endif %}">
+                                    {{ application.status|title }}
+                                </span>
+                                <span class="badge">💰 R{{ "%.0f"|format(application.housing.price) }}/month (total)</span>
+                                <span class="badge">👥 Split between 2</span>
+                                <span class="badge badge-info">Match: {{ "%.1f"|format(application.match_request.compatibility_score) }}%</span>
+                            </div>
+                            
+                            <p><small>Applied on: {{ application.created_at.strftime('%d %B %Y') }}</small></p>
+                        </div>
+                        
+                        <div style="text-align: right;">
+                            {% if application.status == 'pending' %}
+                                <button class="btn btn-success w-100 mb-2" 
+                                        onclick="handleApplication('{{ application.id }}', 'approve', 'group')">
+                                    ✓ Approve Group
+                                </button>
+                                <button class="btn btn-danger w-100" 
+                                        onclick="handleApplication('{{ application.id }}', 'reject', 'group')">
+                                    ✗ Reject Group
+                                </button>
+                            {% else %}
+                                <span class="badge {% if application.status == 'approved' %}badge-success{% else %}badge-danger{% endif %}" style="display: block; padding: 1rem;">
+                                    {{ application.status|title }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info text-center" style="padding: 3rem;">
+            <p>No group applications found.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function handleApplication(applicationId, action, type) {
+    if (confirm(`Are you sure you want to ${action} this ${type} application?`)) {
+        fetch(`/admin/applications/${applicationId}/${action}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ type: type })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(`Application ${action}ed!`, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Failed to process application', 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Network error. Please try again.', 'danger');
+            console.error('Error:', error);
+        });
+    }
+}
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        document.getElementById(this.dataset.tab).classList.add('active');
+    });
+});
+</script>
+{% endblock %}

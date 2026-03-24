@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}{{ housing.title }} - StudentShare{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{{ url_for('housing_listings') }}{% if match_id %}?match_id={{ match_id }}{% endif %}" class="btn btn-outline">
+        Back to Listings
+    </a>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+    <div class="card">
+        <div class="card-body">
+            {% if housing.images %}
+                <div style="margin-bottom: 2rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                        {% for image in housing.images.split(',') %}
+                            <img src="{{ url_for('uploaded_file', filename=image) }}"
+                                 alt="{{ housing.title }}"
+                                 style="width: 100%; height: 150px; object-fit: cover; border-radius: var(--border-radius); cursor: pointer;"
+                                 onclick="openImageModal('{{ url_for('uploaded_file', filename=image) }}')">
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <h2>{{ housing.title }}</h2>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 1rem 0;">
+                <div class="housing-price" style="font-size: 2rem;">
+                    R{{ "%.0f"|format(housing.price) }}/month
+                </div>
+                <span class="badge {% if housing.is_available %}badge-success{% else %}badge-danger{% endif %}" style="padding: 0.5rem 1rem;">
+                    {{ 'Available' if housing.is_available else 'Unavailable' }}
+                </span>
+            </div>
+
+            <p><strong>Address:</strong> {{ housing.address }}, {{ housing.city }}</p>
+
+            <div class="housing-features" style="margin: 1.5rem 0;">
+                <span>Bedrooms: <strong>{{ housing.bedrooms }}</strong></span>
+                <span>Bathrooms: <strong>{{ housing.bathrooms }}</strong></span>
+                <span>Size: <strong>{{ housing.square_meters }}</strong> m2</span>
+            </div>
+
+            <h3 style="margin: 1.5rem 0 1rem;">Description</h3>
+            <p style="line-height: 1.8;">{{ housing.description }}</p>
+
+            <h3 style="margin: 1.5rem 0 1rem;">Features & Amenities</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="color: '{% if housing.furnished %}var(--success){% else %}var(--danger){% endif %}';">
+                        {{ 'Yes' if housing.furnished else 'No' }}
+                    </span>
+                    Furnished
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="color: '{% if housing.utilities_included %}var(--success){% else %}var(--danger){% endif %}';">
+                        {{ 'Yes' if housing.utilities_included else 'No' }}
+                    </span>
+                    Utilities Included
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="color: '{% if housing.parking %}var(--success){% else %}var(--danger){% endif %}';">
+                        {{ 'Yes' if housing.parking else 'No' }}
+                    </span>
+                    Parking
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="color: '{% if housing.wifi_included %}var(--success){% else %}var(--danger){% endif %}';">
+                        {{ 'Yes' if housing.wifi_included else 'No' }}
+                    </span>
+                    WiFi Included
+                </div>
+            </div>
+
+            {% if housing.available_from %}
+                <p style="margin-top: 1.5rem;"><strong>Available From:</strong> {{ housing.available_from.strftime('%d %B %Y') }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card" style="height: fit-content; position: sticky; top: 100px;">
+        <div class="card-header">
+            <h3 style="color: white; margin: 0;">Apply for this Housing</h3>
+        </div>
+        <div class="card-body">
+            {% if current_user.role == 'student' %}
+                {% if group_application %}
+                    <div class="alert alert-info mb-3">
+                        <strong>Shared Application Status:</strong>
+                        <span class="badge {% if group_application.status == 'pending' %}badge-warning{% elif group_application.status == 'approved' %}badge-success{% else %}badge-danger{% endif %}" style="margin-left: 0.5rem;">
+                            {{ group_application.status|title }}
+                        </span>
+                        {% if roommate %}
+                            <p style="margin: 0.75rem 0 0;">This housing is linked to your roommate application with {{ roommate.get_full_name() }}.</p>
+                        {% endif %}
+                    </div>
+
+                    {% if group_application.status == 'approved' %}
+                        {% if group_agreement %}
+                            <a href="{{ url_for('my_agreements') }}" class="btn btn-primary w-100">Review Shared Agreement</a>
+                        {% else %}
+                            <div class="alert alert-success">
+                                Your shared housing has been approved. Your agreement is being prepared.
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <a href="{{ url_for('my_applications') }}" class="btn btn-outline w-100">View Group Application</a>
+                    {% endif %}
+
+                {% elif match_id %}
+                    <div class="alert alert-success mb-3">
+                        <strong>Group Mode</strong>
+                        <p style="margin: 0.5rem 0 0;">You're applying as a group with your matched roommate.</p>
+                    </div>
+
+                    <a href="{{ url_for('apply_with_match', housing_id=housing.id, match_id=match_id) }}"
+                       class="btn btn-success w-100">Continue Group Application</a>
+
+                {% elif active_match %}
+                    {% set matched_roommate = active_match.sender if active_match.receiver_id == current_user.id else active_match.receiver %}
+                    <div class="alert alert-success mb-3">
+                        <strong>Apply With Your Roommate</strong>
+                        <p style="margin: 0.5rem 0 0;">You are already matched with {{ matched_roommate.get_full_name() }}. Use one shared housing application for both of you.</p>
+                    </div>
+
+                    <a href="{{ url_for('housing_detail', housing_id=housing.id) }}?match_id={{ active_match.id }}"
+                       class="btn btn-success w-100">Switch To Shared Application</a>
+
+                {% elif application %}
+                    <div class="alert alert-info mb-3">
+                        <strong>Application Status:</strong>
+                        <span class="badge {% if application.status == 'pending' %}badge-warning{% elif application.status == 'approved' %}badge-success{% else %}badge-danger{% endif %}" style="margin-left: 0.5rem;">
+                            {{ application.status|title }}
+                        </span>
+                    </div>
+
+                    {% if application.status == 'approved' %}
+                        {% set has_agreement = false %}
+                        {% for agreement in current_user.agreements %}
+                            {% if agreement.housing_id == housing.id %}
+                                {% set has_agreement = true %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if not has_agreement %}
+                            <div class="alert alert-success">
+                                Your application has been approved! An agreement will be generated shortly.
+                            </div>
+                        {% else %}
+                            <a href="{{ url_for('my_agreements') }}" class="btn btn-primary w-100">View Agreement</a>
+                        {% endif %}
+                    {% endif %}
+
+                {% elif active_housing_commitment %}
+                    <div class="alert alert-warning">
+                        <strong>Another housing is already active</strong>
+                        <p style="margin: 0.75rem 0 0;">
+                            {{ active_housing_commitment.housing.title }}
+                            {% if active_housing_commitment.roommate %}
+                                is already linked to you and {{ active_housing_commitment.roommate.get_full_name() }}.
+                            {% else %}
+                                is already linked to your account.
+                            {% endif %}
+                        </p>
+                    </div>
+                    <a href="{{ url_for('housing_detail', housing_id=active_housing_commitment.housing.id) }}" class="btn btn-outline w-100">View Current Housing</a>
+
+                {% else %}
+                    {% if housing.is_available %}
+                        <form id="application-form">
+                            <div class="form-group">
+                                <label for="move_in_date">Preferred Move-in Date *</label>
+                                <input type="date" class="form-control" id="move_in_date" name="move_in_date"
+                                       min="{{ now().strftime('%Y-%m-%d') }}" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="lease_term">Lease Term *</label>
+                                <select class="form-control" id="lease_term" name="lease_term" required>
+                                    <option value="">Select term</option>
+                                    <option value="6_months">6 Months</option>
+                                    <option value="12_months">12 Months</option>
+                                    <option value="flexible">Flexible</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="additional_notes">Additional Notes</label>
+                                <textarea class="form-control" id="additional_notes" name="additional_notes" rows="4"
+                                          placeholder="Any questions or special requests?"></textarea>
+                            </div>
+
+                            <button type="button" class="btn btn-primary w-100" onclick="applyForHousing('{{ housing.id }}')">
+                                Submit Application
+                            </button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-warning text-center">
+                            <p>This housing is currently not available.</p>
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+            {% elif current_user.role == 'admin' %}
+                <div class="alert alert-info">
+                    <p>You are viewing as admin.</p>
+                    <a href="{{ url_for('admin_edit_housing', housing_id=housing.id) }}" class="btn btn-primary w-100 mt-2">Edit Listing</a>
+                </div>
+            {% endif %}
+
+            <hr style="margin: 1.5rem 0;">
+
+            <div style="text-align: center;">
+                <p style="color: var(--gray); font-size: 0.9rem;">
+                    <strong>Listing ID:</strong> #{{ housing.id }}<br>
+                    <strong>Posted:</strong> {{ housing.created_at.strftime('%d %b %Y') }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="imageModal" class="modal">
+    <div class="modal-content" style="max-width: 90%; width: fit-content;">
+        <span class="modal-close">&times;</span>
+        <img id="modalImage" src="" alt="Enlarged view" style="max-width: 100%; max-height: 80vh;">
+    </div>
+</div>
+
+<script>
+function openImageModal(imageUrl) {
+    document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('imageModal').style.display = 'block';
+}
+
+function applyForHousing(housingId) {
+    const form = document.getElementById('application-form');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+
+    fetch(`/apply_housing/${housingId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Application submitted successfully!', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAlert(data.error || 'Failed to submit application', 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('Network error. Please try again.', 'danger');
+        console.error('Error:', error);
+    });
+}
+</script>
+{% endblock %}

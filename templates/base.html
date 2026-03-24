@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}StudentShare - Find Your Perfect Roommate{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="{{ url_for('index') }}" class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                StudentShare
+            </a>
+            
+            <div class="nav-links">
+                {% if current_user.is_authenticated %}
+                    {% if current_user.role == 'student' %}
+                        <a href="{{ url_for('student_dashboard') }}">Dashboard</a>
+                        <a href="{{ url_for('matches') }}">Find Roommates</a>
+                        <a href="{{ url_for('housing_listings') }}">Housing</a>
+                        <a href="{{ url_for('my_applications') }}">Applications</a>
+                        <a href="{{ url_for('my_agreements') }}">Agreements</a>
+                    {% elif current_user.role == 'admin' %}
+                        <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+                        <a href="{{ url_for('admin_users') }}">Users</a>
+                        <a href="{{ url_for('admin_housing') }}">Housing</a>
+                        <a href="{{ url_for('admin_applications') }}">Applications</a>
+                        <a href="{{ url_for('admin_matches') }}">Matches</a>
+                    {% endif %}
+                    
+                    <!-- Notifications -->
+                    <div class="notification-dropdown">
+                        <button class="notification-btn">
+                            🔔
+                            <span class="notification-badge" style="display: none;">0</span>
+                        </button>
+                        <div class="notification-list"></div>
+                    </div>
+                    
+                    <!-- Profile -->
+                    <a href="{{ url_for('profile') }}" class="profile-link">
+                        {% if current_user.profile_pic and current_user.profile_pic != 'default.jpg' %}
+                            <img src="{{ url_for('uploaded_file', filename=current_user.profile_pic) }}" 
+                                 alt="{{ current_user.first_name }}" class="profile-thumbnail">
+                        {% else %}
+                            <div class="profile-thumbnail" style="background: var(--primary); color: white; display: flex; align-items: center; justify-content: center;">
+                                {{ current_user.first_name[0] }}{{ current_user.last_name[0] }}
+                            </div>
+                        {% endif %}
+                    </a>
+                    
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">Logout</a>
+                    
+                {% else %}
+                    <a href="{{ url_for('login') }}">Login</a>
+                    <a href="{{ url_for('register') }}" class="btn btn-primary">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Alert Container -->
+    <div id="alert-container" class="container"></div>
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Main Content -->
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer style="background: var(--primary-dark); color: white; padding: 2rem 0; margin-top: 3rem;">
+        <div class="container">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+                <div>
+                    <h4 style="color: white;">StudentShare</h4>
+                    <p style="color: rgba(255,255,255,0.8);">Find your perfect roommate and accommodation. Built for students, by students.</p>
+                </div>
+                <div>
+                    <h4 style="color: white;">Quick Links</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li><a href="{{ url_for('index') }}" style="color: rgba(255,255,255,0.8);">Home</a></li>
+                        <li><a href="{{ url_for('register') }}" style="color: rgba(255,255,255,0.8);">Register</a></li>
+                        <li><a href="{{ url_for('login') }}" style="color: rgba(255,255,255,0.8);">Login</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: white;">Contact</h4>
+                    <p style="color: rgba(255,255,255,0.8);">Email: support@studentshare.co.za<br>Phone: +27 (0) 123 456 789</p>
+                </div>
+            </div>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 2rem 0 1rem;">
+            <p style="text-align: center; color: rgba(255,255,255,0.6);">&copy; 2024 StudentShare. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Hidden element for user data (no Jinja errors) -->
+    <div id="user-data" 
+         data-user-id="{% if current_user.is_authenticated %}{{ current_user.id }}{% endif %}"
+         style="display: none;">
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // This will be populated by the hidden element above
+        const userDataElement = document.getElementById('user-data');
+        window.currentUserId = userDataElement ? userDataElement.dataset.userId : null;
+        if (window.currentUserId === '') {
+            window.currentUserId = null;
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

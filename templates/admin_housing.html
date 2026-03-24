@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Housing Management - StudentShare{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1>Housing Management</h1>
+        <p style="color: var(--gray);">Manage accommodation listings</p>
+    </div>
+    <a href="{{ url_for('admin_add_housing') }}" class="btn btn-primary">
+        + Add New Listing
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="filter-section">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div class="form-group">
+            <label for="search">Search Listings</label>
+            <input type="text" class="form-control" id="search" placeholder="Title or address" onkeyup="filterAdminHousing()">
+        </div>
+        <div class="form-group">
+            <label for="status">Status</label>
+            <select class="form-control" id="status" onchange="filterAdminHousing()">
+                <option value="all">All Listings</option>
+                <option value="available">Available Only</option>
+                <option value="unavailable">Unavailable Only</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="city">City</label>
+            <select class="form-control" id="city" onchange="filterAdminHousing()">
+                <option value="all">All Cities</option>
+                {% for listing in listings %}
+                    <option value="{{ listing.city }}">{{ listing.city }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Listings Table -->
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Image</th>
+                <th>Title</th>
+                <th>Address</th>
+                <th>Price (R)</th>
+                <th>Bedrooms</th>
+                <th>Status</th>
+                <th>Applications</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for listing in listings %}
+            <tr data-status="{{ 'available' if listing.is_available else 'unavailable' }}"
+                data-city="{{ listing.city }}"
+                data-search="{{ (listing.title ~ ' ' ~ listing.address ~ ' ' ~ listing.city)|lower }}">
+                <td>#{{ listing.id }}</td>
+                <td>
+                    {% if listing.images %}
+                        <img src="{{ url_for('uploaded_file', filename=listing.images.split(',')[0]) }}" 
+                             alt="{{ listing.title }}" 
+                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                    {% else %}
+                        <div style="width: 50px; height: 50px; background: var(--light); border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                            <span style="color: var(--gray); font-size: 0.8rem;">No img</span>
+                        </div>
+                    {% endif %}
+                </td>
+                <td>{{ listing.title }}</td>
+                <td>{{ listing.address }}, {{ listing.city }}</td>
+                <td><strong>R{{ "%.0f"|format(listing.price) }}</strong></td>
+                <td>{{ listing.bedrooms }}</td>
+                <td>
+                    <span class="badge {% if listing.is_available %}badge-success{% else %}badge-danger{% endif %}">
+                        {{ 'Available' if listing.is_available else 'Unavailable' }}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge badge-info">{{ listing.applications|length + listing.group_applications|length }}</span>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="{{ url_for('admin_edit_housing', housing_id=listing.id) }}" class="btn btn-primary btn-sm">Edit</a>
+                        <a href="{{ url_for('housing_detail', housing_id=listing.id) }}" class="btn btn-outline btn-sm">View</a>
+                        <button class="btn btn-danger btn-sm" onclick="deleteListing('{{ listing.id }}')">Delete</button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function deleteListing(listingId) {
+    if (confirm('Are you sure you want to delete this listing? This action cannot be undone.')) {
+        fetch(`/admin/housing/delete/${listingId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('Listing deleted successfully', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert('Failed to delete listing', 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Network error. Please try again.', 'danger');
+            console.error('Error:', error);
+        });
+    }
+}
+
+function filterAdminHousing() {
+    const search = document.getElementById('search').value.toLowerCase();
+    const status = document.getElementById('status').value;
+    const city = document.getElementById('city').value;
+    
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        let show = true;
+
+        const rowSearch = row.dataset.search || '';
+        const rowStatus = row.dataset.status || '';
+        const rowCity = row.dataset.city || '';
+
+        if (search && !rowSearch.includes(search)) show = false;
+        if (status !== 'all' && rowStatus !== status) show = false;
+        if (city !== 'all' && rowCity !== city) show = false;
+        
+        row.style.display = show ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

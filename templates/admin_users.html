@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Manage Users - StudentShare{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <h1>User Management</h1>
+    <p style="color: var(--gray);">View and manage student accounts</p>
+</div>
+
+<!-- Filters -->
+<div class="filter-section">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+        <div class="form-group">
+            <label for="search">Search Users</label>
+            <input type="text" class="form-control" id="search" placeholder="Name, username, or email" onkeyup="filterAdminUsers()">
+        </div>
+        <div class="form-group">
+            <label for="status">Status</label>
+            <select class="form-control" id="status" onchange="filterAdminUsers()">
+                <option value="all">All Users</option>
+                <option value="active">Active Only</option>
+                <option value="inactive">Inactive Only</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="preferences">Preferences</label>
+            <select class="form-control" id="preferences" onchange="filterAdminUsers()">
+                <option value="all">All</option>
+                <option value="complete">Preferences Complete</option>
+                <option value="incomplete">Preferences Incomplete</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Profile</th>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Joined</th>
+                <th>Preferences</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr data-status="{{ 'active' if user.is_active else 'inactive' }}"
+                data-preferences="{{ 'complete' if user.preference else 'incomplete' }}"
+                data-search="{{ (user.get_full_name() ~ ' ' ~ user.username ~ ' ' ~ user.email)|lower }}">
+                <td>#{{ user.id }}</td>
+                <td>
+                    {% if user.profile_pic and user.profile_pic != 'default.jpg' %}
+                        <img src="{{ url_for('uploaded_file', filename=user.profile_pic) }}" 
+                             alt="{{ user.first_name }}" 
+                             style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                    {% else %}
+                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+                            {{ user.first_name[0] }}{{ user.last_name[0] }}
+                        </div>
+                    {% endif %}
+                </td>
+                <td>{{ user.get_full_name() }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    {% if user.preference %}
+                        <span class="badge badge-success">Complete</span>
+                        <small style="display: block; color: var(--gray);">{{ user.preference.course or 'No course' }}</small>
+                    {% else %}
+                        <span class="badge badge-warning">Incomplete</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge {% if user.is_active %}badge-success{% else %}badge-danger{% endif %}">
+                        {{ 'Active' if user.is_active else 'Inactive' }}
+                    </span>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-primary btn-sm" onclick="viewUser('{{ user.id }}')">View</button>
+                        <button class="btn btn-warning btn-sm" onclick="resetPassword('{{ user.id }}')">Reset Pass</button>
+                        <button class="btn {% if user.is_active %}btn-danger{% else %}btn-success{% endif %} btn-sm" 
+                                onclick="toggleUser('{{ user.id }}')">
+                            {{ 'Deactivate' if user.is_active else 'Activate' }}
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- User Details Modal -->
+<div id="userModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <span class="modal-close">&times;</span>
+        <div id="userDetails"></div>
+    </div>
+</div>
+
+<script>
+function viewUser(userId) {
+    // Get user data from the row
+    const row = event.target.closest('tr');
+    const cells = row.cells;
+    
+    const html = `
+        <div style="text-align: center;">
+            ${cells[1].innerHTML}
+            <h3 style="margin: 1rem 0;">${cells[2].textContent}</h3>
+            <p><strong>Username:</strong> ${cells[3].textContent}</p>
+            <p><strong>Email:</strong> ${cells[4].textContent}</p>
+            <p><strong>Joined:</strong> ${cells[5].textContent}</p>
+            <p><strong>Preferences:</strong> ${cells[6].innerHTML}</p>
+            <p><strong>Status:</strong> ${cells[7].innerHTML}</p>
+        </div>
+    `;
+    
+    document.getElementById('userDetails').innerHTML = html;
+    document.getElementById('userModal').style.display = 'block';
+}
+
+function resetPassword(userId) {
+    if (confirm('Reset password for this user? A temporary password will be generated.')) {
+        fetch(`/admin/users/reset_password/${userId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Password reset successful!\n\nTemporary password: ${data.temp_password}\n\nPlease share this with the user. They will be prompted to change it on next login.`);
+            } else {
+                alert('Failed to reset password');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to reset password');
+        });
+    }
+}
+
+function toggleUser(userId) {
+    const action = confirm('Toggle user active status?');
+    if (action) {
+        fetch(`/admin/users/toggle_active/${userId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to toggle user status');
+        });
+    }
+}
+
+function filterAdminUsers() {
+    const search = document.getElementById('search').value.toLowerCase();
+    const status = document.getElementById('status').value;
+    const preferences = document.getElementById('preferences').value;
+    
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        let show = true;
+
+        const rowSearch = row.dataset.search || '';
+        const rowStatus = row.dataset.status || '';
+        const rowPreferences = row.dataset.preferences || '';
+
+        if (search && !rowSearch.includes(search)) show = false;
+        if (status !== 'all' && rowStatus !== status) show = false;
+        if (preferences !== 'all' && rowPreferences !== preferences) show = false;
+        
+        row.style.display = show ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

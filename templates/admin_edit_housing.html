@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Edit Housing - StudentShare{% endblock %}
+
+{% block content %}
+<div class="form-container" style="max-width: 800px;">
+    <h2 class="text-center mb-3">Edit Housing Listing</h2>
+    <p class="text-center mb-4" style="color: var(--gray);">Update listing #{{ housing.id }}</p>
+    
+    <form method="POST" action="{{ url_for('admin_edit_housing', housing_id=housing.id) }}" enctype="multipart/form-data" data-validate>
+        <!-- Basic Information -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Basic Information</h3>
+            
+            <div class="form-group">
+                <label for="title">Property Title *</label>
+                <input type="text" class="form-control" id="title" name="title" required 
+                       value="{{ housing.title }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Full Description *</label>
+                <textarea class="form-control" id="description" name="description" rows="5" required>{{ housing.description }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="address">Street Address *</label>
+                <input type="text" class="form-control" id="address" name="address" required 
+                       value="{{ housing.address }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="city">City/Suburb *</label>
+                <input type="text" class="form-control" id="city" name="city" required 
+                       value="{{ housing.city }}">
+            </div>
+        </div>
+        
+        <!-- Property Details -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Property Details</h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                <div class="form-group">
+                    <label for="price">Monthly Rent (R) *</label>
+                    <input type="number" class="form-control" id="price" name="price" min="0" step="500" required 
+                           value="{{ housing.price }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="bedrooms">Bedrooms *</label>
+                    <input type="number" class="form-control" id="bedrooms" name="bedrooms" min="1" required 
+                           value="{{ housing.bedrooms }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="bathrooms">Bathrooms</label>
+                    <input type="number" class="form-control" id="bathrooms" name="bathrooms" min="0" step="0.5" 
+                           value="{{ housing.bathrooms }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="square_meters">Square Meters</label>
+                    <input type="number" class="form-control" id="square_meters" name="square_meters" min="0"
+                           value="{{ housing.square_meters }}">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="available_from">Available From</label>
+                <input type="date" class="form-control" id="available_from" name="available_from" 
+                       value="{{ housing.available_from.strftime('%Y-%m-%d') if housing.available_from }}">
+            </div>
+        </div>
+        
+        <!-- Amenities & Status -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Amenities & Status</h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="furnished" {% if housing.furnished %}checked{% endif %}> Furnished
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="utilities_included" {% if housing.utilities_included %}checked{% endif %}> Utilities Included
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="parking" {% if housing.parking %}checked{% endif %}> Parking Available
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="wifi_included" {% if housing.wifi_included %}checked{% endif %}> WiFi Included
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="is_available" {% if housing.is_available %}checked{% endif %}>
+                    <strong>Available for rent</strong>
+                </label>
+            </div>
+        </div>
+        
+        <!-- Current Images -->
+        {% if housing.images %}
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Current Images</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem;">
+                {% for image in housing.images.split(',') %}
+                    <div style="position: relative;">
+                        <img src="{{ url_for('uploaded_file', filename=image) }}" 
+                             style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px;">
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Add New Images -->
+        <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Add More Images</h3>
+            
+            <div class="form-group">
+                <label for="images">Upload Additional Images</label>
+                <input type="file" class="form-control" id="images" name="images" multiple accept="image/*" data-preview="new-image-preview">
+                <small style="color: var(--gray);">Select new images to add (existing images will be kept)</small>
+            </div>
+            
+            <div id="new-image-preview" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;"></div>
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary" style="flex: 2;">Update Listing</button>
+            <a href="{{ url_for('admin_housing') }}" class="btn btn-outline" style="flex: 1;">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

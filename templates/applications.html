@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}My Applications - StudentShare{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <h1>My Applications</h1>
+    <p style="color: var(--gray);">Track your housing applications</p>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+    <button class="tab active" data-tab="individual">Individual Applications</button>
+    <button class="tab" data-tab="group">Group Applications</button>
+</div>
+
+<!-- Individual Applications -->
+<div id="individual" class="tab-content active">
+    <h2 style="margin-bottom: 1.5rem;">Individual Applications</h2>
+    
+    {% if individual_apps %}
+        {% for application in individual_apps %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+                        <div style="flex: 2;">
+                            <h3 style="margin-bottom: 0.5rem;">{{ application.housing.title }}</h3>
+                            <p style="color: var(--gray); margin-bottom: 0.5rem;">{{ application.housing.address }}</p>
+                            
+                            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                                <span class="badge {% if application.status == 'pending' %}badge-warning{% elif application.status == 'approved' %}badge-success{% else %}badge-danger{% endif %}">
+                                    {{ application.status|title }}
+                                </span>
+                                <span class="badge">💰 R{{ "%.0f"|format(application.housing.price) }}/month</span>
+                                <span class="badge">📅 Applied: {{ application.created_at.strftime('%d %b %Y') }}</span>
+                            </div>
+                            
+                            {% if application.move_in_date %}
+                                <p><strong>Move-in Date:</strong> {{ application.move_in_date.strftime('%d %B %Y') }}</p>
+                            {% endif %}
+                            
+                            {% if application.lease_term %}
+                                <p><strong>Lease Term:</strong> {{ application.lease_term.replace('_', ' ')|title }}</p>
+                            {% endif %}
+                            
+                            {% if application.additional_notes %}
+                                <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-top: 1rem;">
+                                    <strong>Your Notes:</strong>
+                                    <p style="margin: 0.5rem 0 0;">{{ application.additional_notes }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div style="text-align: right;">
+                            <a href="{{ url_for('housing_detail', housing_id=application.housing.id) }}" 
+                               class="btn btn-outline btn-sm">View Housing</a>
+                            
+                            {% if application.status == 'approved' %}
+                                {% set has_agreement = false %}
+                                {% for agreement in current_user.agreements %}
+                                    {% if agreement.housing_id == application.housing.id %}
+                                        {% set has_agreement = true %}
+                                        <a href="{{ url_for('my_agreements') }}" class="btn btn-success btn-sm" style="margin-top: 0.5rem;">View Agreement</a>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if not has_agreement %}
+                                    <button class="btn btn-primary btn-sm" style="margin-top: 0.5rem;" disabled>Agreement Pending</button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info text-center" style="padding: 3rem;">
+            <p style="margin-bottom: 1rem;">You haven't submitted any individual applications yet.</p>
+            <a href="{{ url_for('housing_listings') }}" class="btn btn-primary">Browse Housing</a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Group Applications -->
+<div id="group" class="tab-content">
+    <h2 style="margin-bottom: 1.5rem;">Group Applications</h2>
+    
+    {% if group_apps %}
+        {% for application in group_apps %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+                        <div style="flex: 2;">
+                            <h3 style="margin-bottom: 0.5rem;">{{ application.housing.title }}</h3>
+                            <p style="color: var(--gray); margin-bottom: 0.5rem;">{{ application.housing.address }}</p>
+                            
+                            <div style="background: var(--light); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1rem;">
+                                <strong>Group Members:</strong>
+                                <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        {% if application.match_request.sender.profile_pic and application.match_request.sender.profile_pic != 'default.jpg' %}
+                                            <img src="{{ url_for('uploaded_file', filename=application.match_request.sender.profile_pic) }}" 
+                                                 style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                                        {% else %}
+                                            <div style="width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+                                                {{ application.match_request.sender.first_name[0] }}
+                                            </div>
+                                        {% endif %}
+                                        <span>{{ application.match_request.sender.get_full_name() }}</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        {% if application.match_request.receiver.profile_pic and application.match_request.receiver.profile_pic != 'default.jpg' %}
+                                            <img src="{{ url_for('uploaded_file', filename=application.match_request.receiver.profile_pic) }}" 
+                                                 style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;">
+                                        {% else %}
+                                            <div style="width: 30px; height: 30px; border-radius: 50%; background: var(--secondary); color: white; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+                                                {{ application.match_request.receiver.first_name[0] }}
+                                            </div>
+                                        {% endif %}
+                                        <span>{{ application.match_request.receiver.get_full_name() }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                                <span class="badge {% if application.status == 'pending' %}badge-warning{% elif application.status == 'approved' %}badge-success{% else %}badge-danger{% endif %}">
+                                    {{ application.status|title }}
+                                </span>
+                                <span class="badge">💰 R{{ "%.0f"|format(application.housing.price) }}/month (total)</span>
+                                <span class="badge">👥 Split between 2 people</span>
+                            </div>
+                            
+                            <p><small>Applied on: {{ application.created_at.strftime('%d %B %Y') }}</small></p>
+                        </div>
+                        
+                        <div style="text-align: right;">
+                            <a href="{{ url_for('housing_detail', housing_id=application.housing.id) }}" 
+                               class="btn btn-outline btn-sm">View Housing</a>
+                            
+                            {% if application.status == 'approved' %}
+                                {% set has_agreement = false %}
+                                {% for agreement in current_user.agreements %}
+                                    {% if agreement.housing_id == application.housing.id %}
+                                        {% set has_agreement = true %}
+                                        <a href="{{ url_for('my_agreements') }}" class="btn btn-success btn-sm" style="margin-top: 0.5rem;">View Agreement</a>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if not has_agreement %}
+                                    <button class="btn btn-primary btn-sm" style="margin-top: 0.5rem;" disabled>Agreement Pending</button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info text-center" style="padding: 3rem;">
+            <p style="margin-bottom: 1rem;">You haven't submitted any group applications yet.</p>
+            <a href="{{ url_for('matches') }}" class="btn btn-primary">Find a Roommate to Apply With</a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        document.getElementById(this.dataset.tab).classList.add('active');
+    });
+});
+</script>
+{% endblock %}

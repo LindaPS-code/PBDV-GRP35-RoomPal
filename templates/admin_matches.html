@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Matches - StudentShare{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <h1>Roommate Matches</h1>
+    <p style="color: var(--gray);">View all active and finalised matches</p>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Active Matches</h3>
+        <div class="number">{{ matches|length }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Finalised Matches</h3>
+        <div class="number">{{ finalised|length }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Average Compatibility</h3>
+        <div class="number">
+            {% if matches %}
+                {% set total = namespace(value=0) %}
+                {% for match in matches %}
+                    {% set total.value = total.value + match.compatibility_score %}
+                {% endfor %}
+                {{ "%.1f"|format(total.value / matches|length) }}%
+            {% else %}
+                0%
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+    <button class="tab active" data-tab="active">Active Matches ({{ matches|length }})</button>
+    <button class="tab" data-tab="finalised">Finalised Matches ({{ finalised|length }})</button>
+</div>
+
+<!-- Active Matches -->
+<div id="active" class="tab-content active">
+    <h2 style="margin-bottom: 1.5rem;">Active Matches</h2>
+    
+    {% if matches %}
+        {% for match in matches %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 2rem; align-items: center;">
+                        <!-- Sender -->
+                        <div style="text-align: center;">
+                            {% if match.sender.profile_pic and match.sender.profile_pic != 'default.jpg' %}
+                                <img src="{{ url_for('uploaded_file', filename=match.sender.profile_pic) }}" 
+                                     style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem;">
+                            {% else %}
+                                <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 0.5rem;">
+                                    {{ match.sender.first_name[0] }}{{ match.sender.last_name[0] }}
+                                </div>
+                            {% endif %}
+                            <h4 style="margin-bottom: 0.25rem;">{{ match.sender.get_full_name() }}</h4>
+                            <p style="color: var(--gray);">{{ match.sender.email }}</p>
+                            {% if match.sender.preference %}
+                                <p style="font-size: 0.9rem;">{{ match.sender.preference.course }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Match Info -->
+                        <div style="text-align: center;">
+                            <div style="font-size: 2.5rem; font-weight: 700; color: var(--secondary);">
+                                {{ "%.1f"|format(match.compatibility_score) }}%
+                            </div>
+                            <div class="progress-bar" style="width: 150px; margin: 1rem auto;">
+                                <div class="progress-fill" style="width: {{ match.compatibility_score }}%"></div>
+                            </div>
+                            <span class="badge badge-success">✓ Active Match</span>
+                            <p style="margin-top: 0.5rem;"><small>Since {{ match.updated_at.strftime('%d %b %Y') }}</small></p>
+                            
+                            {% if match.message %}
+                                <div style="background: var(--light); padding: 0.5rem; border-radius: var(--border-radius); margin-top: 0.5rem;">
+                                    <small><strong>Initial message:</strong> {{ match.message }}</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Receiver -->
+                        <div style="text-align: center;">
+                            {% if match.receiver.profile_pic and match.receiver.profile_pic != 'default.jpg' %}
+                                <img src="{{ url_for('uploaded_file', filename=match.receiver.profile_pic) }}" 
+                                     style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem;">
+                            {% else %}
+                                <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--secondary); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 0.5rem;">
+                                    {{ match.receiver.first_name[0] }}{{ match.receiver.last_name[0] }}
+                                </div>
+                            {% endif %}
+                            <h4 style="margin-bottom: 0.25rem;">{{ match.receiver.get_full_name() }}</h4>
+                            <p style="color: var(--gray);">{{ match.receiver.email }}</p>
+                            {% if match.receiver.preference %}
+                                <p style="font-size: 0.9rem;">{{ match.receiver.preference.course }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Housing Information if any -->
+                    {% set group_app = match.group_applications|first %}
+                    {% if group_app and group_app.status == 'approved' %}
+                        <div class="alert alert-success" style="margin-top: 1rem;">
+                            <strong>Housing Assigned:</strong> {{ group_app.housing.title }} - R{{ "%.0f"|format(group_app.housing.price) }}/month
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info text-center" style="padding: 3rem;">
+            <p>No active matches found.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Finalised Matches -->
+<div id="finalised" class="tab-content">
+    <h2 style="margin-bottom: 1.5rem;">Finalised Matches</h2>
+    
+    {% if finalised %}
+        {% for match in finalised %}
+            <div class="card mb-3" style="opacity: 0.8;">
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 2rem; align-items: center;">
+                        <!-- Sender -->
+                        <div style="text-align: center;">
+                            {% if match.sender.profile_pic and match.sender.profile_pic != 'default.jpg' %}
+                                <img src="{{ url_for('uploaded_file', filename=match.sender.profile_pic) }}" 
+                                     style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+                            {% endif %}
+                            <h5>{{ match.sender.get_full_name() }}</h5>
+                        </div>
+                        
+                        <!-- Match Info -->
+                        <div style="text-align: center;">
+                            <span class="badge badge-success">Finalised</span>
+                            <p><small>Since {{ match.finalised_at.strftime('%d %b %Y') }}</small></p>
+                        </div>
+                        
+                        <!-- Receiver -->
+                        <div style="text-align: center;">
+                            {% if match.receiver.profile_pic and match.receiver.profile_pic != 'default.jpg' %}
+                                <img src="{{ url_for('uploaded_file', filename=match.receiver.profile_pic) }}" 
+                                     style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+                            {% endif %}
+                            <h5>{{ match.receiver.get_full_name() }}</h5>
+                        </div>
+                    </div>
+                    
+                    <!-- Housing Information -->
+                    {% set group_app = match.group_applications|first %}
+                    {% if group_app and group_app.status == 'approved' %}
+                        <div class="alert alert-info" style="margin-top: 1rem;">
+                            <strong>Housing:</strong> {{ group_app.housing.title }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info text-center" style="padding: 3rem;">
+            <p>No finalised matches yet.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        document.getElementById(this.dataset.tab).classList.add('active');
+    });
+});
+</script>
+{% endblock %}

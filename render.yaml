@@ -20,7 +20,7 @@ services:
       - key: REMEMBER_COOKIE_SECURE
         value: "true"
       - key: SEED_DEFAULT_ADMIN
-        value: "false"
+        value: "true"
       - key: MAIL_SERVER
         sync: false
       - key: MAIL_PORT

@@ -2259,7 +2259,8 @@ def initialize_database():
         db.create_all()
 
 def seed_default_admin():
-    if not parse_bool(os.environ.get('SEED_DEFAULT_ADMIN', 'false')):
+    default_seed = 'true' if parse_bool(os.environ.get('RENDER', 'false')) else 'false'
+    if not parse_bool(os.environ.get('SEED_DEFAULT_ADMIN', default_seed)):
         return
 
     admin_username = os.environ.get('ADMIN_USERNAME', 'admin')

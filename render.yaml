@@ -21,6 +21,8 @@ services:
         value: "true"
       - key: SEED_DEFAULT_ADMIN
         value: "true"
+      - key: FORCE_RESET_DEFAULT_ADMIN
+        value: "true"
       - key: MAIL_SERVER
         sync: false
       - key: MAIL_PORT

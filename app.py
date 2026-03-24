@@ -2266,10 +2266,19 @@ def seed_default_admin():
     admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
     admin_email = os.environ.get('ADMIN_EMAIL', 'admin@example.com')
     admin_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+    force_reset = parse_bool(os.environ.get('FORCE_RESET_DEFAULT_ADMIN', 'false'))
 
     with app.app_context():
         admin = User.query.filter_by(username=admin_username).first()
         if admin:
+            if not force_reset:
+                return
+
+            admin.email = admin_email
+            admin.role = 'admin'
+            admin.set_password(admin_password)
+            db.session.commit()
+            print(f"Admin password reset - username: {admin_username}")
             return
 
         admin = User(

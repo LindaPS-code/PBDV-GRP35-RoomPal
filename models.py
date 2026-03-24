@@ -28,7 +28,13 @@ class User(UserMixin, db.Model):
     agreements = db.relationship('Agreement', backref='student', lazy=True)
     sent_messages = db.relationship('Message', foreign_keys='Message.sender_id', backref='sender', lazy=True)
     received_messages = db.relationship('Message', foreign_keys='Message.receiver_id', backref='receiver', lazy=True)
-    checklist_items = db.relationship('ChecklistItem', backref='student', lazy=True)
+    checklist_items = db.relationship(
+        'ChecklistItem',
+        foreign_keys='ChecklistItem.created_by',
+        backref=db.backref('student', overlaps='creator,checklist_items'),
+        lazy=True,
+        overlaps='creator,student'
+    )
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -137,7 +143,11 @@ class ChecklistItem(db.Model):
     
     # Relationships
     match_request = db.relationship('MatchRequest', backref='checklist')
-    creator = db.relationship('User', foreign_keys=[created_by])
+    creator = db.relationship(
+        'User',
+        foreign_keys=[created_by],
+        overlaps='checklist_items,student'
+    )
 
 class Housing(db.Model):
     __tablename__ = 'housing'

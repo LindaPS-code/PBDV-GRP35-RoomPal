@@ -24,7 +24,7 @@
             <label style="display: flex; align-items: center; gap: 0.5rem;">
                 <input type="checkbox" name="remember"> Remember me
             </label>
-            <a href="#" style="color: var(--secondary);">Forgot Password?</a>
+            <a href="{{ url_for('forgot_password') }}" style="color: var(--secondary);">Forgot Password?</a>
         </div>
         
         <button type="submit" class="btn btn-primary w-100">Login</button>

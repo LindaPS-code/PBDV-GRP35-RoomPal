@@ -8,49 +8,64 @@
     <p style="color: var(--gray);">Based on your preferences, here are your best matches</p>
 </div>
 
-<!-- Pending Requests Section -->
+{% if active_match %}
+    {% set matched_roommate = active_match.sender if active_match.receiver_id == current_user.id else active_match.receiver %}
+    <div class="alert alert-success mb-4" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div>
+            <strong>Active Match Locked In</strong>
+            <p style="margin: 0.25rem 0 0;">You are already matched with {{ matched_roommate.get_full_name() }}. You cannot accept or send another roommate match until this one is resolved.</p>
+        </div>
+        <a href="{{ url_for('housing_listings') }}?match_id={{ active_match.id }}" class="btn btn-primary btn-sm">Find Housing Together</a>
+    </div>
+{% endif %}
+
 {% if pending_requests %}
 <div style="margin-bottom: 2rem;">
     <h2 style="color: var(--warning);">Pending Requests ({{ pending_requests|length }})</h2>
     <p style="color: var(--gray); margin-bottom: 1rem;">These students have sent you match requests</p>
-    
+
     {% for request in pending_requests %}
         <div class="match-card" style="border-left: 4px solid var(--warning);">
             <div style="display: flex; align-items: center; gap: 1.5rem; width: 100%; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     {% if request.user.profile_pic and request.user.profile_pic != 'default.jpg' %}
-                        <img src="{{ url_for('uploaded_file', filename=request.user.profile_pic) }}" 
+                        <img src="{{ url_for('uploaded_file', filename=request.user.profile_pic) }}"
                              alt="{{ request.user.first_name }}" class="profile-thumbnail" style="width: 80px; height: 80px;">
                     {% else %}
                         <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem;">
                             {{ request.user.first_name[0] }}{{ request.user.last_name[0] }}
                         </div>
                     {% endif %}
-                    
+
                     <div>
                         <h3 style="margin-bottom: 0.25rem;">{{ request.user.get_full_name() }}</h3>
                         <p style="color: var(--gray); margin-bottom: 0.25rem;">{{ request.user.preference.course }} • Year {{ request.user.preference.year_of_study }}</p>
                         <div class="match-score" style="background: var(--warning);">{{ request.score }}% Match</div>
                     </div>
                 </div>
-                
+
                 <div style="flex: 1;">
                     {% if request.message %}
                         <div style="background: var(--light); padding: 0.75rem; border-radius: var(--border-radius); margin-bottom: 0.5rem;">
                             <strong>Message:</strong> {{ request.message }}
                         </div>
                     {% endif %}
-                    
+
                     {% if request.insights %}
                         <div style="background: var(--info); color: white; padding: 0.5rem; border-radius: var(--border-radius); font-size: 0.9rem;">
-                            💡 {{ request.insights[0] }}
+                            Insight: {{ request.insights[0] }}
                         </div>
                     {% endif %}
                 </div>
-                
+
                 <div style="display: flex; gap: 0.5rem;">
-                    <button class="btn btn-success" onclick="respondToMatchRequest('{{ request.request_id }}', 'accept')">✓ Accept</button>
-                    <button class="btn btn-danger" onclick="respondToMatchRequest('{{ request.request_id }}', 'reject')">✗ Reject</button>
+                    {% if active_match %}
+                        <button class="btn btn-warning" disabled>Match Locked</button>
+                        <button class="btn btn-danger" onclick="respondToMatchRequest('{{ request.request_id }}', 'reject')">Reject</button>
+                    {% else %}
+                        <button class="btn btn-success" onclick="respondToMatchRequest('{{ request.request_id }}', 'accept')">Accept</button>
+                        <button class="btn btn-danger" onclick="respondToMatchRequest('{{ request.request_id }}', 'reject')">Reject</button>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -58,121 +73,127 @@
 </div>
 {% endif %}
 
-<!-- Filters -->
 <div class="filter-section">
     <form class="filter-form" action="{{ url_for('matches') }}" method="GET">
         <div class="filter-grid">
             <div class="form-group">
                 <label for="min_score">Minimum Compatibility</label>
                 <select class="form-control" id="min_score" name="min_score">
-                    <option value="50">50%+</option>
-                    <option value="60">60%+</option>
-                    <option value="70">70%+</option>
-                    <option value="80">80%+</option>
-                    <option value="90">90%+</option>
+                    <option value="50" {% if request.args.get('min_score', '50') == '50' %}selected{% endif %}>50%+</option>
+                    <option value="60" {% if request.args.get('min_score') == '60' %}selected{% endif %}>60%+</option>
+                    <option value="70" {% if request.args.get('min_score') == '70' %}selected{% endif %}>70%+</option>
+                    <option value="80" {% if request.args.get('min_score') == '80' %}selected{% endif %}>80%+</option>
+                    <option value="90" {% if request.args.get('min_score') == '90' %}selected{% endif %}>90%+</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
                 <label for="sleep_schedule">Sleep Schedule</label>
                 <select class="form-control" id="sleep_schedule" name="sleep_schedule">
                     <option value="">Any</option>
-                    <option value="early">Early Bird</option>
-                    <option value="night">Night Owl</option>
-                    <option value="flexible">Flexible</option>
+                    <option value="early" {% if request.args.get('sleep_schedule') == 'early' %}selected{% endif %}>Early Bird</option>
+                    <option value="night" {% if request.args.get('sleep_schedule') == 'night' %}selected{% endif %}>Night Owl</option>
+                    <option value="flexible" {% if request.args.get('sleep_schedule') == 'flexible' %}selected{% endif %}>Flexible</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
                 <label for="study_habits">Study Habits</label>
                 <select class="form-control" id="study_habits" name="study_habits">
                     <option value="">Any</option>
-                    <option value="quiet">Quiet</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="group">Group Study</option>
+                    <option value="quiet" {% if request.args.get('study_habits') == 'quiet' %}selected{% endif %}>Quiet</option>
+                    <option value="moderate" {% if request.args.get('study_habits') == 'moderate' %}selected{% endif %}>Moderate</option>
+                    <option value="group" {% if request.args.get('study_habits') == 'group' %}selected{% endif %}>Group Study</option>
                 </select>
             </div>
-            
+
             <div class="form-group">
                 <label for="smoking">Smoking</label>
                 <select class="form-control" id="smoking" name="smoking">
                     <option value="">Any</option>
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
+                    <option value="yes" {% if request.args.get('smoking') == 'yes' %}selected{% endif %}>Yes</option>
+                    <option value="no" {% if request.args.get('smoking') == 'no' %}selected{% endif %}>No</option>
                 </select>
             </div>
         </div>
-        
+
         <button type="submit" class="btn btn-primary mt-2">Apply Filters</button>
         <a href="{{ url_for('matches') }}" class="btn btn-outline mt-2">Clear Filters</a>
     </form>
 </div>
 
-<!-- Matches Results -->
 <div class="filter-results">
     <h2 style="margin-bottom: 1.5rem;">Potential Matches</h2>
-    
+
     {% if matches %}
         {% for match in matches %}
             <div class="match-card">
                 <div style="display: flex; align-items: center; gap: 1.5rem; width: 100%; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 1rem; min-width: 250px;">
                         {% if match.user.profile_pic and match.user.profile_pic != 'default.jpg' %}
-                            <img src="{{ url_for('uploaded_file', filename=match.user.profile_pic) }}" 
+                            <img src="{{ url_for('uploaded_file', filename=match.user.profile_pic) }}"
                                  alt="{{ match.user.first_name }}" class="profile-thumbnail" style="width: 80px; height: 80px;">
                         {% else %}
                             <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem;">
                                 {{ match.user.first_name[0] }}{{ match.user.last_name[0] }}
                             </div>
                         {% endif %}
-                        
+
                         <div>
                             <h3 style="margin-bottom: 0.25rem;">{{ match.user.get_full_name() }}</h3>
                             <p style="color: var(--gray); margin-bottom: 0.25rem;">{{ match.user.preference.course }} • Year {{ match.user.preference.year_of_study }}</p>
                             <p style="color: var(--gray); font-size: 0.9rem;">
-                                Age: {{ match.user.preference.age if match.user.preference.age else 'N/A' }} • 
+                                Age: {{ match.user.preference.age if match.user.preference.age else 'N/A' }} •
                                 {{ match.user.preference.gender|title if match.user.preference.gender else 'Not specified' }}
                             </p>
                             <div class="match-score">{{ match.score }}%</div>
                         </div>
                     </div>
-                    
+
                     <div style="flex: 1;">
                         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
-                            <span class="badge">🌙 {{ match.user.preference.sleep_schedule|title }}</span>
-                            <span class="badge">📚 {{ match.user.preference.study_habits|title }}</span>
-                            <span class="badge">🧹 {{ match.user.preference.cleanliness }}/5 Clean</span>
-                            <span class="badge">💰 R{{ "%.0f"|format(match.user.preference.budget_min) }}-R{{ "%.0f"|format(match.user.preference.budget_max) }}</span>
+                            <span class="badge">Sleep: {{ match.user.preference.sleep_schedule|title }}</span>
+                            <span class="badge">Study: {{ match.user.preference.study_habits|title }}</span>
+                            <span class="badge">Cleanliness: {{ match.user.preference.cleanliness }}/5</span>
+                            <span class="badge">Budget: R{{ "%.0f"|format(match.user.preference.budget_min) }}-R{{ "%.0f"|format(match.user.preference.budget_max) }}</span>
                         </div>
-                        
+
                         {% if match.user.preference.hobbies %}
                             <p style="margin-bottom: 0.5rem;"><strong>Hobbies:</strong> {{ match.user.preference.hobbies }}</p>
                         {% endif %}
-                        
+
                         {% if match.insights %}
                             <div style="background: var(--info); color: white; padding: 0.5rem; border-radius: var(--border-radius); font-size: 0.9rem;">
-                                💡 {{ match.insights[0] }}
+                                Insight: {{ match.insights[0] }}
                             </div>
                         {% endif %}
                     </div>
-                    
+
                     <div style="min-width: 150px; text-align: center;">
                         {% if match.status == 'pending' %}
                             {% if match.is_receiver %}
-                                <div style="display: flex; gap: 0.5rem;">
-                                    <button class="btn btn-success btn-sm" onclick="respondToMatchRequest('{{ match.request_id }}', 'accept')">Accept</button>
-                                    <button class="btn btn-danger btn-sm" onclick="respondToMatchRequest('{{ match.request_id }}', 'reject')">Reject</button>
-                                </div>
+                                {% if active_match %}
+                                    <button class="btn btn-warning" disabled style="width: 100%;">Match Locked</button>
+                                {% else %}
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <button class="btn btn-success btn-sm" onclick="respondToMatchRequest('{{ match.request_id }}', 'accept')">Accept</button>
+                                        <button class="btn btn-danger btn-sm" onclick="respondToMatchRequest('{{ match.request_id }}', 'reject')">Reject</button>
+                                    </div>
+                                {% endif %}
                             {% else %}
                                 <button class="btn btn-warning" disabled style="width: 100%;">Request Sent</button>
                             {% endif %}
                         {% elif match.status == 'accepted' %}
-                            <button class="btn btn-success" disabled style="width: 100%;">✓ Matched</button>
+                            <button class="btn btn-success" disabled style="width: 100%;">Matched</button>
                             <a href="{{ url_for('housing_listings') }}?match_id={{ match.request_id }}" class="btn btn-primary btn-sm" style="width: 100%; margin-top: 0.5rem;">Find Housing Together</a>
                         {% elif match.status == 'rejected' %}
-                            <button class="btn btn-danger" disabled style="width: 100%;">✗ Rejected</button>
+                            <button class="btn btn-danger" disabled style="width: 100%;">Rejected</button>
                         {% else %}
-                            <button class="btn btn-primary" onclick="sendMatchRequest('{{ match.user.id }}')" style="width: 100%;">Send Request</button>
+                            {% if active_match %}
+                                <button class="btn btn-warning" disabled style="width: 100%;">Already Matched</button>
+                            {% else %}
+                                <button class="btn btn-primary" onclick="sendMatchRequest('{{ match.user.id }}')" style="width: 100%;">Send Request</button>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -187,19 +208,18 @@
     {% endif %}
 </div>
 
-<!-- Match Request Modal -->
 <div id="matchModal" class="modal">
     <div class="modal-content">
         <span class="modal-close">&times;</span>
         <h3>Send Match Request</h3>
         <p style="color: var(--gray); margin-bottom: 1rem;">Add a personal message to introduce yourself</p>
-        
+
         <div class="form-group">
             <label for="match-message">Message (Optional)</label>
-            <textarea class="form-control" id="match-message" rows="4" 
+            <textarea class="form-control" id="match-message" rows="4"
                       placeholder="Hi! I think we'd be great roommates because..."></textarea>
         </div>
-        
+
         <div style="display: flex; gap: 1rem;">
             <button class="btn btn-primary" style="flex: 1;" onclick="confirmMatchRequest()">Send Request</button>
             <button class="btn btn-outline" style="flex: 1;" onclick="closeModal(document.getElementById('matchModal'))">Cancel</button>

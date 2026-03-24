@@ -18,11 +18,11 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
         <div class="form-group">
             <label for="search">Search Listings</label>
-            <input type="text" class="form-control" id="search" placeholder="Title or address" onkeyup="filterTable()">
+            <input type="text" class="form-control" id="search" placeholder="Title or address" onkeyup="filterAdminHousing()">
         </div>
         <div class="form-group">
             <label for="status">Status</label>
-            <select class="form-control" id="status" onchange="filterTable()">
+            <select class="form-control" id="status" onchange="filterAdminHousing()">
                 <option value="all">All Listings</option>
                 <option value="available">Available Only</option>
                 <option value="unavailable">Unavailable Only</option>
@@ -30,7 +30,7 @@
         </div>
         <div class="form-group">
             <label for="city">City</label>
-            <select class="form-control" id="city" onchange="filterTable()">
+            <select class="form-control" id="city" onchange="filterAdminHousing()">
                 <option value="all">All Cities</option>
                 {% for listing in listings %}
                     <option value="{{ listing.city }}">{{ listing.city }}</option>
@@ -58,7 +58,9 @@
         </thead>
         <tbody>
             {% for listing in listings %}
-            <tr>
+            <tr data-status="{{ 'available' if listing.is_available else 'unavailable' }}"
+                data-city="{{ listing.city }}"
+                data-search="{{ (listing.title ~ ' ' ~ listing.address ~ ' ' ~ listing.city)|lower }}">
                 <td>#{{ listing.id }}</td>
                 <td>
                     {% if listing.images %}
@@ -118,7 +120,7 @@ function deleteListing(listingId) {
     }
 }
 
-function filterTable() {
+function filterAdminHousing() {
     const search = document.getElementById('search').value.toLowerCase();
     const status = document.getElementById('status').value;
     const city = document.getElementById('city').value;
@@ -127,26 +129,14 @@ function filterTable() {
     
     rows.forEach(row => {
         let show = true;
-        
-        // Search filter
-        if (search) {
-            const text = row.cells[2].textContent.toLowerCase() + ' ' + 
-                        row.cells[3].textContent.toLowerCase();
-            if (!text.includes(search)) show = false;
-        }
-        
-        // Status filter
-        if (status !== 'all') {
-            const statusCell = row.cells[6].querySelector('.badge').textContent.toLowerCase();
-            if (status === 'available' && !statusCell.includes('available')) show = false;
-            if (status === 'unavailable' && !statusCell.includes('unavailable')) show = false;
-        }
-        
-        // City filter
-        if (city !== 'all') {
-            const cityCell = row.cells[3].textContent.split(',')[1].trim();
-            if (!cityCell.includes(city)) show = false;
-        }
+
+        const rowSearch = row.dataset.search || '';
+        const rowStatus = row.dataset.status || '';
+        const rowCity = row.dataset.city || '';
+
+        if (search && !rowSearch.includes(search)) show = false;
+        if (status !== 'all' && rowStatus !== status) show = false;
+        if (city !== 'all' && rowCity !== city) show = false;
         
         row.style.display = show ? '' : 'none';
     });

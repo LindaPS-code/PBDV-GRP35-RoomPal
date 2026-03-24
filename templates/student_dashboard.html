@@ -51,6 +51,35 @@
 </div>
 {% endif %}
 
+{% if active_housing_commitment %}
+<div style="margin-bottom: 2rem;">
+    <h2>Current Housing</h2>
+    <div class="card" style="margin-top: 1rem;">
+        <div class="card-body">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <div>
+                    <h3 style="margin-bottom: 0.5rem;">{{ active_housing_commitment.housing.title }}</h3>
+                    <p style="color: var(--gray); margin-bottom: 0.5rem;">{{ active_housing_commitment.housing.address }}, {{ active_housing_commitment.housing.city }}</p>
+                    <p style="margin: 0;">
+                        Status:
+                        <span class="badge {% if active_housing_commitment.status == 'pending' %}badge-warning{% else %}badge-success{% endif %}">
+                            {{ active_housing_commitment.status|title }}
+                        </span>
+                    </p>
+                    {% if active_housing_commitment.roommate %}
+                        <p style="margin: 0.75rem 0 0;">Shared with {{ active_housing_commitment.roommate.get_full_name() }}</p>
+                    {% endif %}
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <a href="{{ url_for('housing_detail', housing_id=active_housing_commitment.housing.id) }}" class="btn btn-primary btn-sm">View Housing</a>
+                    <a href="{{ url_for('my_applications') }}" class="btn btn-outline btn-sm">View Applications</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Quick Actions -->
 <div style="margin-bottom: 2rem;">
     <h2>Quick Actions</h2>

@@ -8,6 +8,35 @@
     <p style="color: var(--gray);">Browse verified accommodation near your campus</p>
 </div>
 
+{% if current_housing_commitment %}
+<div class="alert alert-info mb-4" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+    <div>
+        <strong>Current Housing Commitment</strong>
+        <p style="margin: 0.25rem 0 0;">
+            {{ current_housing_commitment.housing.title }}
+            {% if current_housing_commitment.roommate %}
+                is already shared with {{ current_housing_commitment.roommate.get_full_name() }}.
+            {% else %}
+                is already linked to your account.
+            {% endif %}
+            New applications are disabled until this is resolved.
+        </p>
+    </div>
+    <a href="{{ url_for('housing_detail', housing_id=current_housing_commitment.housing.id) }}" class="btn btn-outline btn-sm">View Current Housing</a>
+</div>
+{% endif %}
+
+{% if active_match and not current_housing_commitment and not match_id %}
+<div class="alert alert-success mb-4" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+    <div>
+        {% set matched_roommate = active_match.sender if active_match.receiver_id == current_user.id else active_match.receiver %}
+        <strong>Shared Housing Only</strong>
+        <p style="margin: 0.25rem 0 0;">You are already matched with {{ matched_roommate.get_full_name() }}. Choose housing together so both of you stay linked to one application.</p>
+    </div>
+    <a href="{{ url_for('housing_listings') }}?match_id={{ active_match.id }}" class="btn btn-primary btn-sm">Browse Together</a>
+</div>
+{% endif %}
+
 <!-- Group Application Banner -->
 {% if match_id %}
 <div class="alert alert-success mb-4" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
@@ -68,11 +97,6 @@
             </label>
             
             <label style="display: flex; align-items: center; gap: 0.5rem;">
-                <input type="checkbox" name="pet_friendly" {% if request.args.get('pet_friendly') %}checked{% endif %}>
-                Pet Friendly
-            </label>
-            
-            <label style="display: flex; align-items: center; gap: 0.5rem;">
                 <input type="checkbox" name="utilities_included" {% if request.args.get('utilities_included') %}checked{% endif %}>
                 Utilities Included
             </label>
@@ -95,6 +119,8 @@
     {% if listings %}
         <div class="grid">
             {% for housing in listings %}
+                {% set shared_app = group_application_map.get(housing.id) if group_application_map else None %}
+                {% set personal_app = individual_application_map.get(housing.id) if individual_application_map else None %}
                 <div class="housing-card">
                     {% if housing.images %}
                         <img src="{{ url_for('uploaded_file', filename=housing.images.split(',')[0]) }}" 
@@ -124,18 +150,31 @@
                             {% if housing.furnished %}
                                 <span class="badge badge-info">Furnished</span>
                             {% endif %}
-                            {% if housing.pet_friendly %}
-                                <span class="badge badge-success">Pet Friendly</span>
-                            {% endif %}
                             {% if housing.parking %}
                                 <span class="badge badge-warning">Parking</span>
                             {% endif %}
                             {% if housing.wifi_included %}
                                 <span class="badge badge-primary">WiFi</span>
                             {% endif %}
+                            {% if shared_app %}
+                                <span class="badge {% if shared_app.status == 'pending' %}badge-warning{% else %}badge-success{% endif %}">Shared {{ shared_app.status|title }}</span>
+                            {% elif personal_app %}
+                                <span class="badge {% if personal_app.status == 'pending' %}badge-warning{% else %}badge-success{% endif %}">Application {{ personal_app.status|title }}</span>
+                            {% elif not housing.is_available %}
+                                <span class="badge badge-danger">Unavailable</span>
+                            {% endif %}
                         </div>
                         
-                        {% if match_id %}
+                        {% if shared_app %}
+                            <a href="{{ url_for('housing_detail', housing_id=housing.id) }}{% if match_id %}?match_id={{ match_id }}{% endif %}" 
+                               class="btn btn-outline w-100">View Shared Status</a>
+                        {% elif personal_app %}
+                            <a href="{{ url_for('housing_detail', housing_id=housing.id) }}" 
+                               class="btn btn-outline w-100">View Application</a>
+                        {% elif match_id and current_housing_commitment and current_housing_commitment.housing.id != housing.id %}
+                            <a href="{{ url_for('housing_detail', housing_id=housing.id) }}?match_id={{ match_id }}" 
+                               class="btn btn-outline w-100">View Details</a>
+                        {% elif match_id %}
                             <a href="{{ url_for('apply_with_match', housing_id=housing.id, match_id=match_id) }}" 
                                class="btn btn-success w-100">Apply as Group</a>
                         {% else %}

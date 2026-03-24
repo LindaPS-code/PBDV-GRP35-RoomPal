@@ -13,11 +13,11 @@
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
         <div class="form-group">
             <label for="search">Search Users</label>
-            <input type="text" class="form-control" id="search" placeholder="Name, username, or email" onkeyup="filterTable()">
+            <input type="text" class="form-control" id="search" placeholder="Name, username, or email" onkeyup="filterAdminUsers()">
         </div>
         <div class="form-group">
             <label for="status">Status</label>
-            <select class="form-control" id="status" onchange="filterTable()">
+            <select class="form-control" id="status" onchange="filterAdminUsers()">
                 <option value="all">All Users</option>
                 <option value="active">Active Only</option>
                 <option value="inactive">Inactive Only</option>
@@ -25,7 +25,7 @@
         </div>
         <div class="form-group">
             <label for="preferences">Preferences</label>
-            <select class="form-control" id="preferences" onchange="filterTable()">
+            <select class="form-control" id="preferences" onchange="filterAdminUsers()">
                 <option value="all">All</option>
                 <option value="complete">Preferences Complete</option>
                 <option value="incomplete">Preferences Incomplete</option>
@@ -52,7 +52,9 @@
         </thead>
         <tbody>
             {% for user in users %}
-            <tr>
+            <tr data-status="{{ 'active' if user.is_active else 'inactive' }}"
+                data-preferences="{{ 'complete' if user.preference else 'incomplete' }}"
+                data-search="{{ (user.get_full_name() ~ ' ' ~ user.username ~ ' ' ~ user.email)|lower }}">
                 <td>#{{ user.id }}</td>
                 <td>
                     {% if user.profile_pic and user.profile_pic != 'default.jpg' %}
@@ -167,7 +169,7 @@ function toggleUser(userId) {
     }
 }
 
-function filterTable() {
+function filterAdminUsers() {
     const search = document.getElementById('search').value.toLowerCase();
     const status = document.getElementById('status').value;
     const preferences = document.getElementById('preferences').value;
@@ -176,28 +178,14 @@ function filterTable() {
     
     rows.forEach(row => {
         let show = true;
-        
-        // Search filter
-        if (search) {
-            const text = row.cells[2].textContent.toLowerCase() + ' ' + 
-                        row.cells[3].textContent.toLowerCase() + ' ' + 
-                        row.cells[4].textContent.toLowerCase();
-            if (!text.includes(search)) show = false;
-        }
-        
-        // Status filter
-        if (status !== 'all') {
-            const statusCell = row.cells[7].querySelector('.badge').textContent.toLowerCase();
-            if (status === 'active' && !statusCell.includes('active')) show = false;
-            if (status === 'inactive' && !statusCell.includes('inactive')) show = false;
-        }
-        
-        // Preferences filter
-        if (preferences !== 'all') {
-            const prefCell = row.cells[6].querySelector('.badge').textContent.toLowerCase();
-            if (preferences === 'complete' && !prefCell.includes('complete')) show = false;
-            if (preferences === 'incomplete' && !prefCell.includes('incomplete')) show = false;
-        }
+
+        const rowSearch = row.dataset.search || '';
+        const rowStatus = row.dataset.status || '';
+        const rowPreferences = row.dataset.preferences || '';
+
+        if (search && !rowSearch.includes(search)) show = false;
+        if (status !== 'all' && rowStatus !== status) show = false;
+        if (preferences !== 'all' && rowPreferences !== preferences) show = false;
         
         row.style.display = show ? '' : 'none';
     });
